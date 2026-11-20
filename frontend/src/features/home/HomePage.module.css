@@ -1,0 +1,128 @@
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: center;
+  gap: 2rem 4rem;
+  padding-block: clamp(2rem, 1rem + 5vw, 5rem);
+}
+
+.pergunta {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 40rem;
+}
+
+.pergunta h1 {
+  font-size: var(--titulo-1);
+  max-width: 17ch;
+  text-wrap: balance;
+}
+
+.apoio {
+  color: var(--cinza-brasa);
+  font-size: var(--texto-medio);
+  max-width: var(--medida);
+}
+
+.campo {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  font: inherit;
+  font-size: var(--texto-medio);
+  color: var(--osso);
+  background: var(--pedra);
+  border: 2px solid var(--pedra-borda);
+  border-radius: var(--raio);
+  resize: vertical;
+}
+
+.campo::placeholder {
+  color: var(--cinza-brasa);
+  opacity: 0.8;
+}
+
+.campo:focus-visible {
+  border-color: var(--osso);
+  outline-offset: 2px;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+}
+
+.criar {
+  display: inline-block;
+  padding: 0.8rem 1.6rem;
+  background: var(--ouro-orbe);
+  color: var(--ardosia);
+  font-weight: 700;
+  font-size: var(--texto-base);
+  text-decoration: none;
+  border-radius: var(--raio);
+}
+
+.criar:hover {
+  background: var(--ouro-orbe-forte);
+}
+
+.exemplos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.9rem;
+  color: var(--cinza-brasa);
+  font-size: var(--texto-base);
+}
+
+.exemplos button {
+  padding: 0;
+  font: inherit;
+  color: var(--osso);
+  background: none;
+  border: 0;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.exemplos button:hover {
+  text-decoration-style: solid;
+}
+
+.passos {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 46rem;
+  padding-block: 2rem 4rem;
+}
+
+.passos h2 {
+  font-size: var(--titulo-2);
+}
+
+.passos ol {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding-left: 1.5rem;
+  max-width: var(--medida);
+}
+
+.passos li::marker {
+  font-family: var(--fonte-titulo);
+  font-weight: 800;
+  color: var(--cinza-brasa);
+}
+
+.passos strong {
+  font-weight: 700;
+}
+
+@media (max-width: 56rem) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

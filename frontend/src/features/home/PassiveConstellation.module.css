@@ -1,0 +1,98 @@
+.figura {
+  margin: 0;
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+}
+
+.ceu {
+  width: min(100%, 26rem);
+  height: auto;
+  overflow: visible;
+}
+
+.forca {
+  --cor-regiao: var(--gema-forca);
+}
+
+.destreza {
+  --cor-regiao: var(--gema-destreza);
+}
+
+.inteligencia {
+  --cor-regiao: var(--gema-inteligencia);
+}
+
+.linha {
+  stroke: var(--cor-regiao);
+  stroke-width: 2;
+  stroke-opacity: 0.55;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: desenhar 900ms ease-out both;
+  animation-delay: calc(var(--ordem) * 280ms + 150ms);
+}
+
+.no,
+.notable {
+  fill: var(--ardosia);
+  stroke: var(--cor-regiao);
+  stroke-width: 2.5;
+  animation: acender 500ms ease-out both;
+  animation-delay: calc(var(--ordem) * 280ms + 700ms);
+}
+
+.notable {
+  fill: var(--cor-regiao);
+}
+
+.inicio {
+  fill: var(--ardosia);
+  stroke: var(--osso);
+  stroke-width: 3;
+}
+
+@keyframes desenhar {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes acender {
+  from {
+    opacity: 0;
+  }
+}
+
+.legenda {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: center;
+  color: var(--cinza-brasa);
+  font-size: var(--texto-pequeno);
+}
+
+.legenda ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--osso);
+}
+
+.legenda li::before {
+  content: "";
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--cor-regiao);
+}
