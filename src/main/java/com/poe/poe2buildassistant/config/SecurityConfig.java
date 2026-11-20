@@ -26,6 +26,19 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    static final String CONTENT_SECURITY_POLICY = String.join(
+            "; ",
+            "default-src 'self'",
+            "script-src 'self'",
+            "style-src 'self'",
+            "img-src 'self' data:",
+            "font-src 'self'",
+            "connect-src 'self'",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'");
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(
@@ -41,6 +54,10 @@ public class SecurityConfig {
                                         .anyRequest()
                                         .denyAll())
                 .csrf(csrf -> csrf.spa())
+                // Segunda barreira contra XSS: a #13 exibe texto gerado pelo LLM. Fontes, scripts e
+                // estilos são todos da própria origem (Vite + @fontsource), então nada mais é
+                // permitido (chaos Y1).
+                .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY)))
                 // Requisições negadas não são guardadas em sessão: cada 403 anônimo criava uma
                 // sessão HTTP (chaos K4). O login Google (#14) redireciona para "/" explicitamente.
                 .requestCache(cache -> cache.requestCache(new NullRequestCache()));

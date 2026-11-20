@@ -40,7 +40,15 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   if (!response.ok) {
     throw await toApiError(response);
   }
-  return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  try {
+    return (await response.json()) as T;
+  } catch {
+    // 200 com HTML (portal cativo, proxy) ou JSON cortado: as telas só tratam ApiError (chaos Y3).
+    throw new ApiError(response.status, GENERIC_ERROR);
+  }
 }
 
 export function apiGet<T>(path: string): Promise<T> {
