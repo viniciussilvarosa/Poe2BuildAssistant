@@ -5,7 +5,9 @@ CREATE TABLE quota_counter (
     day           DATE         NOT NULL,
     count         INTEGER      NOT NULL CHECK (count >= 0),
     PRIMARY KEY (requester_key, day),
-    CONSTRAINT ck_quota_counter_key CHECK (requester_key ~ '^(anon|user):.+$')
+    -- Visitante só como hash SHA-256 (64 hex minúsculos): o banco recusa um IP cru (chaos R5).
+    CONSTRAINT ck_quota_counter_key
+        CHECK (requester_key ~ '^anon:[0-9a-f]{64}$' OR requester_key ~ '^user:.+$')
 );
 
 CREATE INDEX ix_quota_counter_day ON quota_counter (day);
