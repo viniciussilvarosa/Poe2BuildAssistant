@@ -155,9 +155,10 @@ class CatalogPersistenceChaosTest {
         @DisplayName("quase-duplicado já gravado (bypass) falha citando o item, não com erro genérico")
         void quaseDuplicadoGravado() {
             long v = version("0.4", "PUBLISHED");
-            // Simula dado gravado sem a constraint: o DDL do PostgreSQL é transacional, então o índice
-            // volta no rollback do @DataJpaTest.
+            // Simula dado legado gravado sem as proteções: o DDL do PostgreSQL é transacional, então
+            // índice e constraint voltam no rollback do @DataJpaTest.
             jdbc.sql("DROP INDEX uq_support_gem_name").update();
+            jdbc.sql("ALTER TABLE support_gem DROP CONSTRAINT ck_support_gem_name").update();
             item("support_gem", v, "Pierce");
             item("support_gem", v, "Pierce ");
 

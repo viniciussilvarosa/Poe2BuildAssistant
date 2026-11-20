@@ -1,5 +1,18 @@
 -- Catálogo versionado por patch do PoE 2 (card #4). Só uma versão PUBLISHED por vez.
 -- Itens são únicos por versão ignorando caixa; relações nunca cruzam versões (FKs compostas).
+-- Nomes só entram na forma canônica do domínio (CatalogNames): sem espaço nas pontas e com
+-- qualquer sequência de espaço Unicode reduzida a um espaço. Assim, o banco nunca guarda um
+-- dado que o domínio recusaria (chaos E1/E2 da #4).
+
+-- Mesma classe de espaços da propriedade Unicode White_Space usada por (?U)\s no Java.
+CREATE FUNCTION canonical_catalog_name(value TEXT) RETURNS TEXT
+    LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+AS $$
+    SELECT btrim(regexp_replace(
+        value,
+        '[\u0009-\u000D \u0085   -     　]+',
+        ' ', 'g'), ' ')
+$$;
 
 CREATE TABLE catalog_version (
     id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -72,7 +85,26 @@ CREATE TABLE playstyle (
     name               VARCHAR(120) NOT NULL
 );
 
--- Unicidade por versão ignorando caixa, como a busca do domínio.
+-- Forma canônica obrigatória: recusa vazio, espaço nas pontas e espaço interno duplicado/especial.
+ALTER TABLE catalog_version ADD CONSTRAINT ck_catalog_version_patch
+    CHECK (patch <> '' AND patch = canonical_catalog_name(patch));
+ALTER TABLE character_class ADD CONSTRAINT ck_character_class_name
+    CHECK (name <> '' AND name = canonical_catalog_name(name));
+ALTER TABLE ascendancy ADD CONSTRAINT ck_ascendancy_name
+    CHECK (name <> '' AND name = canonical_catalog_name(name));
+ALTER TABLE weapon_type ADD CONSTRAINT ck_weapon_type_name
+    CHECK (name <> '' AND name = canonical_catalog_name(name));
+ALTER TABLE skill_gem ADD CONSTRAINT ck_skill_gem_name
+    CHECK (name <> '' AND name = canonical_catalog_name(name));
+ALTER TABLE support_gem ADD CONSTRAINT ck_support_gem_name
+    CHECK (name <> '' AND name = canonical_catalog_name(name));
+ALTER TABLE passive_notable ADD CONSTRAINT ck_passive_notable_name
+    CHECK (name <> '' AND name = canonical_catalog_name(name));
+ALTER TABLE playstyle ADD CONSTRAINT ck_playstyle_name
+    CHECK (name <> '' AND name = canonical_catalog_name(name));
+
+-- Unicidade por versão ignorando caixa. Como os nomes já são canônicos, lower(name) compara
+-- exatamente como CatalogNames.normalize do domínio.
 CREATE UNIQUE INDEX uq_character_class_name ON character_class (catalog_version_id, lower(name));
 CREATE UNIQUE INDEX uq_ascendancy_name      ON ascendancy      (catalog_version_id, lower(name));
 CREATE UNIQUE INDEX uq_weapon_type_name     ON weapon_type     (catalog_version_id, lower(name));
