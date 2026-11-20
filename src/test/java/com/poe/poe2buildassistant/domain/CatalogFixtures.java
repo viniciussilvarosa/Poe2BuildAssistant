@@ -45,6 +45,20 @@ public final class CatalogFixtures {
                 .build();
     }
 
+    /** Mesmo catálogo da fixture, mas com estes notables no lugar dos padrão. */
+    public static Catalog catalogWithNotables(List<String> notables) {
+        Catalog base = catalog();
+        Catalog.Builder b = Catalog.builder(base.version());
+        base.classes().forEach(b::characterClass);
+        base.ascendancies().forEach(b::ascendancy);
+        base.weaponTypes().forEach(b::weaponType);
+        base.skillGems().forEach(b::skillGem);
+        base.supportGems().forEach(b::supportGem);
+        base.playstyles().forEach(b::playstyle);
+        notables.forEach(n -> b.notable(new PassiveNotable(n, "")));
+        return b.build();
+    }
+
     /** Draft coerente com o catálogo: Ranger/Deadeye/Bow/Ice Shot. */
     public static GeneratedBuildDraft validDraft() {
         return draft("Ranger", "Deadeye", "Bow", "Ice Shot", List.of("Pierce", "Cold Infusion"), FIVE_NOTABLES);

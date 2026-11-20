@@ -58,13 +58,12 @@ class BuildValidatorTest {
     @Test
     @DisplayName("aponta mais de 8 notables")
     void apontaNotablesDemais() {
-        var nine = new java.util.ArrayList<>(FIVE_NOTABLES);
-        nine.addAll(List.of("Spare Notable", "Swift Flight", "Cold Precision", "Frozen Edge"));
+        List<String> nine = List.of("N1", "N2", "N3", "N4", "N5", "N6", "N7", "N8", "N9");
         var draft = draft("Ranger", "Deadeye", "Bow", "Ice Shot", List.of("Pierce"), nine);
 
-        assertThat(validator.validate(draft, catalog, rangerBow))
+        assertThat(validator.validate(draft, CatalogFixtures.catalogWithNotables(nine), rangerBow))
                 .extracting(BuildViolation::type)
-                .contains(Type.NOTABLE_COUNT);
+                .containsExactly(Type.NOTABLE_COUNT);
     }
 
     @Test
@@ -102,7 +101,7 @@ class BuildValidatorTest {
     @Test
     @DisplayName("campo obrigatório ausente no draft é uma violação, não uma exceção")
     void campoAusente() {
-        var draft = draft(null, "Deadeye", "  ", "Ice Shot", null, FIVE_NOTABLES);
+        var draft = draft(null, "Deadeye", "  ", "Ice Shot", List.of("Pierce"), FIVE_NOTABLES);
 
         assertThat(validator.validate(draft, catalog, new BuildRequest("x", Constraints.none())))
                 .extracting(BuildViolation::type, BuildViolation::field)

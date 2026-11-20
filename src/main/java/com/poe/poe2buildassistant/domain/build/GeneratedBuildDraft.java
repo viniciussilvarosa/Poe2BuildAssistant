@@ -43,7 +43,8 @@ public record GeneratedBuildDraft(
     }
 
     public GeneratedBuildDraft {
-        choiceReasons = choiceReasons == null ? List.of() : List.copyOf(choiceReasons);
+        choiceReasons =
+                choiceReasons == null ? List.of() : choiceReasons.stream().filter(Objects::nonNull).toList();
         supports = copy(supports);
         passiveTree = Objects.requireNonNullElse(passiveTree, new PassiveDirection("", List.of()));
         gear = Objects.requireNonNullElse(gear, new GearPriorities(List.of(), List.of(), List.of()));

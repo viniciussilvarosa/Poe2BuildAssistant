@@ -6,14 +6,19 @@ import com.poe.poe2buildassistant.domain.catalog.Catalog;
 import com.poe.poe2buildassistant.domain.catalog.CatalogNames;
 import com.poe.poe2buildassistant.domain.catalog.CharacterClass;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
  * Guarda da regra dos 100%: um draft só pode ser exibido se todo nome de jogo que ele cita existe
  * no catálogo vigente e se ele respeita as restrições do usuário. Devolve TODAS as violações (não
  * para na primeira) para que a regeneração receba o feedback completo.
+ *
+ * <p>Também exige o conteúdo que a tela de resultado mostra (resumo, sinergia, direção da árvore),
+ * conta suportes e notables por nomes distintos e aponta repetições.
  *
  * <p>Equipamentos são atributos em texto livre e não são validados. O estilo de jogo orienta a
  * geração, mas o draft não tem campo para ele, então não é conferido aqui.
@@ -22,6 +27,9 @@ public final class BuildValidator {
 
     public static final int MIN_NOTABLES = 3;
     public static final int MAX_NOTABLES = 8;
+    /** Uma skill do PoE 2 tem no máximo 5 encaixes de suporte. */
+    public static final int MIN_SUPPORTS = 1;
+    public static final int MAX_SUPPORTS = 5;
 
     public List<BuildViolation> validate(GeneratedBuildDraft draft, Catalog catalog, BuildRequest request) {
         List<BuildViolation> violations = new ArrayList<>();
@@ -32,17 +40,28 @@ public final class BuildValidator {
                 required(violations, "ascendancy", draft.ascendancy(), catalog::findAscendancy);
         required(violations, "weaponType", draft.weaponType(), catalog::findWeaponType);
         required(violations, "mainSkill", draft.mainSkill(), catalog::findSkillGem);
-        draft.supports().forEach(s -> known(violations, "supports", s, catalog::findSupportGem));
+        requiredText(violations, "summary", draft.summary());
+        requiredText(violations, "synergy", draft.synergy());
+        requiredText(violations, "passiveTree", draft.passiveTree().direction());
+
+        List<String> supports = draft.supports();
+        supports.forEach(s -> known(violations, "supports", s, catalog::findSupportGem));
+        int distinctSupports = reportDuplicates(violations, "supports", supports);
+        if (distinctSupports < MIN_SUPPORTS || distinctSupports > MAX_SUPPORTS) {
+            violations.add(new BuildViolation(Type.SUPPORT_COUNT, "supports", String.valueOf(distinctSupports)));
+        }
+
         List<String> notables = draft.passiveTree().notables();
         notables.forEach(n -> known(violations, "notables", n, catalog::findNotable));
+        int distinctNotables = reportDuplicates(violations, "notables", notables);
+        if (distinctNotables < MIN_NOTABLES || distinctNotables > MAX_NOTABLES) {
+            violations.add(new BuildViolation(Type.NOTABLE_COUNT, "notables", String.valueOf(distinctNotables)));
+        }
 
         if (characterClass.isPresent()
                 && ascendancy.isPresent()
                 && !ascendancy.get().belongsTo(characterClass.get())) {
             violations.add(new BuildViolation(Type.ASCENDANCY_MISMATCH, "ascendancy", draft.ascendancy()));
-        }
-        if (notables.size() < MIN_NOTABLES || notables.size() > MAX_NOTABLES) {
-            violations.add(new BuildViolation(Type.NOTABLE_COUNT, "notables", String.valueOf(notables.size())));
         }
 
         Constraints constraints = request.constraints();
@@ -52,6 +71,23 @@ public final class BuildValidator {
         respected(violations, "mainSkill", constraints.mainSkill(), draft.mainSkill());
 
         return List.copyOf(violations);
+    }
+
+    private static void requiredText(List<BuildViolation> violations, String field, String value) {
+        if (value == null || value.isBlank()) {
+            violations.add(new BuildViolation(Type.MISSING_FIELD, field, ""));
+        }
+    }
+
+    /** Reporta cada repetição (por nome normalizado) e devolve quantos itens distintos existem. */
+    private static int reportDuplicates(List<BuildViolation> violations, String field, List<String> values) {
+        Set<String> seen = new HashSet<>();
+        for (String value : values) {
+            if (!seen.add(CatalogNames.normalize(value))) {
+                violations.add(new BuildViolation(Type.DUPLICATE_ITEM, field, value));
+            }
+        }
+        return seen.size();
     }
 
     private static <T> Optional<T> required(
