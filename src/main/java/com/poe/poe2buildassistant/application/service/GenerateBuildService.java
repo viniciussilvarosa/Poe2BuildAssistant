@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -70,10 +71,11 @@ public class GenerateBuildService implements GenerateBuildUseCase {
     }
 
     @Override
-    public Build generate(GenerateBuildCommand command, GenerationProgressPort progress) {
+    public Build generate(GenerateBuildCommand command, GenerationProgressPort listener) {
         Instant start = clock.now();
         BuildRequest request = command.request();
         Requester requester = command.requester();
+        GenerationProgressPort progress = isolated(listener);
 
         // Validar antes de cobrar: pedido incoerente ou catálogo ausente não gastam cota.
         progress.emit(GenerationStep.VALIDATING_INPUT);
@@ -94,12 +96,35 @@ public class GenerateBuildService implements GenerateBuildUseCase {
                     .addKeyValue("catalogPatch", catalog.version().patch())
                     .log();
             return build;
-        } catch (ProviderUnavailable e) {
-            // Falha do provedor não é culpa do usuário: a cota volta (card #10).
+        } catch (GenerationFailed e) {
+            // A IA respondeu e nenhuma tentativa serviu: houve geração, a cota fica consumida.
+            throw e;
+        } catch (RuntimeException e) {
+            // Provedor indisponível, bug ou banco fora do ar: não é culpa do usuário, a cota volta
+            // (card #10; chaos T2/T3).
             quota.release(requester, day);
-            logFailure("provider_unavailable", requester);
+            logFailure(e instanceof ProviderUnavailable ? "provider_unavailable" : "unexpected", requester);
             throw e;
         }
+    }
+
+    /**
+     * Progresso é só informativo: um ouvinte que falha (ex.: cliente SSE que fechou a aba) nunca
+     * interrompe a geração nem muda o resultado. Depois da primeira falha ele é ignorado (chaos T1).
+     */
+    private static GenerationProgressPort isolated(GenerationProgressPort listener) {
+        AtomicBoolean broken = new AtomicBoolean(false);
+        return step -> {
+            if (broken.get()) {
+                return;
+            }
+            try {
+                listener.emit(step);
+            } catch (RuntimeException e) {
+                broken.set(true);
+                log.atWarn().setMessage("build.generation.progress_listener_failed").addKeyValue("step", step).log();
+            }
+        };
     }
 
     private Build generateValid(

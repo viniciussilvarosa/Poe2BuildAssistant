@@ -7,8 +7,8 @@ import java.util.Objects;
  * Rascunho de build devolvido pela IA, ainda NÃO validado. É o contrato que o adaptador do LLM
  * preenche; o {@link BuildValidator} decide se ele pode ser exibido.
  *
- * <p>Como é entrada não confiável, o construtor não rejeita nada: listas nulas viram vazias e
- * campos ausentes ficam nulos para o validador apontar. Nomes de jogo em inglês; textos em pt-BR.
+ * <p>Como é entrada não confiável, o construtor não rejeita nada: listas nulas viram vazias,
+ * campos ausentes ficam nulos para o validador apontar e caracteres de controle são removidos. Nomes de jogo em inglês; textos em pt-BR.
  */
 public record GeneratedBuildDraft(
         String summary,
@@ -24,11 +24,17 @@ public record GeneratedBuildDraft(
         List<String> campaignTips) {
 
     /** Por que a IA escolheu um campo que o usuário deixou em "Deixar a IA escolher". */
-    public record ChoiceReason(String field, String reason) {}
+    public record ChoiceReason(String field, String reason) {
+        public ChoiceReason {
+            field = UntrustedText.clean(field);
+            reason = UntrustedText.clean(reason);
+        }
+    }
 
     /** Direção na árvore de passivas e os notables-chave (3 a 8). */
     public record PassiveDirection(String direction, List<String> notables) {
         public PassiveDirection {
+            direction = UntrustedText.clean(direction);
             notables = copy(notables);
         }
     }
@@ -43,6 +49,12 @@ public record GeneratedBuildDraft(
     }
 
     public GeneratedBuildDraft {
+        summary = UntrustedText.clean(summary);
+        synergy = UntrustedText.clean(synergy);
+        characterClass = UntrustedText.clean(characterClass);
+        ascendancy = UntrustedText.clean(ascendancy);
+        weaponType = UntrustedText.clean(weaponType);
+        mainSkill = UntrustedText.clean(mainSkill);
         choiceReasons =
                 choiceReasons == null ? List.of() : choiceReasons.stream().filter(Objects::nonNull).toList();
         supports = copy(supports);
@@ -52,6 +64,6 @@ public record GeneratedBuildDraft(
     }
 
     private static List<String> copy(List<String> values) {
-        return values == null ? List.of() : values.stream().filter(Objects::nonNull).toList();
+        return UntrustedText.clean(values);
     }
 }

@@ -14,6 +14,7 @@ import java.util.function.Function;
 public record BuildRequest(String concept, Constraints constraints) {
 
     public BuildRequest {
+        concept = UntrustedText.clean(concept);
         if (concept == null || concept.isBlank()) {
             throw new InvalidBuildRequest("O conceito do personagem é obrigatório.");
         }
