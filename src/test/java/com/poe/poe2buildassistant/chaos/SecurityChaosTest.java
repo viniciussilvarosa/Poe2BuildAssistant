@@ -9,8 +9,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.poe.poe2buildassistant.adapter.in.web.RequesterResolver;
+import com.poe.poe2buildassistant.application.port.in.GenerateBuildUseCase;
+import com.poe.poe2buildassistant.application.port.in.GetBuildUseCase;
 import com.poe.poe2buildassistant.config.SecurityConfig;
 import jakarta.servlet.http.Cookie;
+import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,15 +24,36 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.task.SyncTaskExecutor;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 /** Ataques à configuração de segurança base (card #1). */
 @WebMvcTest
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, SecurityChaosTest.WebBeans.class})
 class SecurityChaosTest {
+
+    /** Todos os controllers sobem (o ataque cobre a API inteira); dependências deles viram dublês. */
+    @TestConfiguration
+    static class WebBeans {
+        @Bean
+        RequesterResolver requesterResolver() {
+            return new RequesterResolver("salt-de-teste");
+        }
+
+        @Bean("buildGenerationExecutor")
+        Executor buildGenerationExecutor() {
+            return new SyncTaskExecutor();
+        }
+    }
+
+    @MockitoBean private GenerateBuildUseCase generateBuild;
+    @MockitoBean private GetBuildUseCase getBuild;
 
     @Autowired private MockMvc mvc;
 
