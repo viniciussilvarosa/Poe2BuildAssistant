@@ -1,0 +1,22 @@
+{
+  "summary": "Arqueiro de gelo que congela grupos à distância com alta mobilidade.",
+  "synergy": "Ice Shot congela e Pierce atravessa vários inimigos; Cold Infusion reforça o dano de gelo.",
+  "choiceReasons": [
+    { "field": "ascendancy", "reason": "Deadeye melhora projéteis, ideal para um arqueiro." }
+  ],
+  "characterClass": "Ranger",
+  "ascendancy": "Deadeye",
+  "weaponType": "Bow",
+  "mainSkill": "Ice Shot",
+  "supports": ["Pierce", "Cold Infusion"],
+  "passiveTree": {
+    "direction": "Comece pelo lado da Ranger e siga para projéteis e frio.",
+    "notables": ["Swift Flight", "Cold Precision", "Frozen Edge", "Agile Feet"]
+  },
+  "gear": {
+    "weapon": ["Dano de gelo adicional", "Velocidade de ataque"],
+    "armour": ["Vida máxima", "Resistência a frio"],
+    "accessories": ["Resistências elementais"]
+  },
+  "campaignTips": ["Faça o primeiro Labirinto no Ato 2 para pegar a Ascendência."]
+}
