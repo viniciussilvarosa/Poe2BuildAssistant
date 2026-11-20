@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import styles from "./HomePage.module.css";
-import { PassiveConstellation } from "./PassiveConstellation";
 
 const EXAMPLES = ["arqueiro de gelo", "monge de raios", "bruxa que invoca mortos"];
 
@@ -12,15 +11,20 @@ export function HomePage() {
 
   return (
     <>
+      {/* Arte oficial do Path of Exile 2 (sem o logo) como palco da página. */}
+      <div className={styles.arte} aria-hidden="true" />
+
       <section className={styles.hero}>
-        <div className={styles.pergunta}>
-          <h1>
-            <label htmlFor="conceito">Que personagem você quer jogar?</label>
-          </h1>
-          <p className={styles.apoio}>
-            Descreva a ideia com suas palavras. Você recebe um plano inicial de gemas, passivas e equipamentos para
-            seguir na campanha.
-          </p>
+        <h1>
+          <label htmlFor="conceito">Que personagem você quer jogar?</label>
+        </h1>
+        <p className={styles.apoio}>
+          Descreva a ideia com suas palavras. Você recebe um plano inicial de gemas, passivas e equipamentos para seguir
+          na campanha.
+        </p>
+
+        {/* Moldura no idioma dos tooltips de item do jogo; o separador divide o campo das sugestões. */}
+        <div className={styles.tooltip}>
           <textarea
             id="conceito"
             className={styles.campo}
@@ -30,10 +34,8 @@ export function HomePage() {
             onChange={(e) => setConcept(e.target.value)}
             placeholder="Ex.: um arqueiro que congela tudo e nunca para de se mover"
           />
+          <div className={styles.separador} aria-hidden="true" />
           <div className={styles.acoes}>
-            <Link to={createLink} className={styles.criar}>
-              Criar Build
-            </Link>
             <p className={styles.exemplos}>
               <span>Experimente:</span>
               {EXAMPLES.map((example) => (
@@ -42,9 +44,11 @@ export function HomePage() {
                 </button>
               ))}
             </p>
+            <Link to={createLink} className={styles.criar}>
+              Criar Build
+            </Link>
           </div>
         </div>
-        <PassiveConstellation />
       </section>
 
       <section id="como-funciona" className={styles.passos} aria-labelledby="como-funciona-titulo">
