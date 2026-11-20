@@ -3,6 +3,8 @@ package com.poe.poe2buildassistant.domain.build;
 import com.poe.poe2buildassistant.domain.catalog.Ascendancy;
 import com.poe.poe2buildassistant.domain.catalog.Catalog;
 import com.poe.poe2buildassistant.domain.catalog.CharacterClass;
+import com.poe.poe2buildassistant.domain.catalog.SkillGem;
+import com.poe.poe2buildassistant.domain.catalog.WeaponType;
 import com.poe.poe2buildassistant.domain.shared.InvalidBuildRequest;
 import java.util.Objects;
 import java.util.Optional;
@@ -20,7 +22,8 @@ public record BuildRequest(String concept, Constraints constraints) {
     }
 
     /**
-     * Garante que cada restrição existe no catálogo e que a ascendência pertence à classe escolhida.
+     * Garante que cada restrição existe no catálogo, que a ascendência pertence à classe escolhida e
+     * que a habilidade escolhida pode ser usada com a arma escolhida.
      *
      * @throws InvalidBuildRequest com mensagem em pt-BR que cita o valor problemático
      */
@@ -29,14 +32,20 @@ public record BuildRequest(String concept, Constraints constraints) {
                 require(constraints.characterClass(), catalog::findClass, "Classe");
         Optional<Ascendancy> ascendancy =
                 require(constraints.ascendancy(), catalog::findAscendancy, "Ascendência");
-        require(constraints.weaponType(), catalog::findWeaponType, "Arma");
-        require(constraints.mainSkill(), catalog::findSkillGem, "Habilidade principal");
+        Optional<WeaponType> weaponType = require(constraints.weaponType(), catalog::findWeaponType, "Arma");
+        Optional<SkillGem> mainSkill =
+                require(constraints.mainSkill(), catalog::findSkillGem, "Habilidade principal");
         require(constraints.playstyle(), catalog::findPlaystyle, "Estilo de jogo");
 
         if (characterClass.isPresent() && ascendancy.isPresent() && !ascendancy.get().belongsTo(characterClass.get())) {
             throw new InvalidBuildRequest(
                     "A ascendência " + ascendancy.get().name() + " não pertence à classe "
                             + characterClass.get().name() + ".");
+        }
+        if (mainSkill.isPresent() && weaponType.isPresent() && !mainSkill.get().usableWith(weaponType.get())) {
+            throw new InvalidBuildRequest(
+                    "A habilidade " + mainSkill.get().name() + " não pode ser usada com " + weaponType.get().name()
+                            + ".");
         }
     }
 

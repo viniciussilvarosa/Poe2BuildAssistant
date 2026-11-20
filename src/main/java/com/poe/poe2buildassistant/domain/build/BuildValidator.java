@@ -5,6 +5,8 @@ import com.poe.poe2buildassistant.domain.catalog.Ascendancy;
 import com.poe.poe2buildassistant.domain.catalog.Catalog;
 import com.poe.poe2buildassistant.domain.catalog.CatalogNames;
 import com.poe.poe2buildassistant.domain.catalog.CharacterClass;
+import com.poe.poe2buildassistant.domain.catalog.SkillGem;
+import com.poe.poe2buildassistant.domain.catalog.WeaponType;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -17,7 +19,8 @@ import java.util.function.Function;
  * no catálogo vigente e se ele respeita as restrições do usuário. Devolve TODAS as violações (não
  * para na primeira) para que a regeneração receba o feedback completo.
  *
- * <p>Também exige o conteúdo que a tela de resultado mostra (resumo, sinergia, direção da árvore),
+ * <p>Confere ainda a coerência de jogo entre a skill principal e a arma (ex.: Ice Shot exige Bow).
+ * Também exige o conteúdo que a tela de resultado mostra (resumo, sinergia, direção da árvore),
  * conta suportes e notables por nomes distintos e aponta repetições.
  *
  * <p>Equipamentos são atributos em texto livre e não são validados. O estilo de jogo orienta a
@@ -38,8 +41,12 @@ public final class BuildValidator {
                 required(violations, "class", draft.characterClass(), catalog::findClass);
         Optional<Ascendancy> ascendancy =
                 required(violations, "ascendancy", draft.ascendancy(), catalog::findAscendancy);
-        required(violations, "weaponType", draft.weaponType(), catalog::findWeaponType);
-        required(violations, "mainSkill", draft.mainSkill(), catalog::findSkillGem);
+        Optional<WeaponType> weaponType =
+                required(violations, "weaponType", draft.weaponType(), catalog::findWeaponType);
+        Optional<SkillGem> mainSkill = required(violations, "mainSkill", draft.mainSkill(), catalog::findSkillGem);
+        if (mainSkill.isPresent() && weaponType.isPresent() && !mainSkill.get().usableWith(weaponType.get())) {
+            violations.add(new BuildViolation(Type.SKILL_WEAPON_MISMATCH, "mainSkill", draft.mainSkill()));
+        }
         requiredText(violations, "summary", draft.summary());
         requiredText(violations, "synergy", draft.synergy());
         requiredText(violations, "passiveTree", draft.passiveTree().direction());

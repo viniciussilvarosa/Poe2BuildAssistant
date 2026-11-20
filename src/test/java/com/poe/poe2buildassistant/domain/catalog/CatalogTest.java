@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.poe.poe2buildassistant.domain.CatalogFixtures;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -47,6 +48,33 @@ class CatalogTest {
         assertThatThrownBy(() -> Catalog.builder(v04).ascendancy(new Ascendancy("Deadeye", RANGER)).build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Ranger");
+    }
+
+    @Test
+    @DisplayName("gema que exige tipo de arma fora do catálogo é rejeitada")
+    void rejeitaGemaComArmaInexistente() {
+        assertThatThrownBy(
+                        () ->
+                                Catalog.builder(v04)
+                                        .weaponType(new WeaponType("Bow"))
+                                        .skillGem(new SkillGem("Ice Shot", List.of("Crossbow")))
+                                        .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Crossbow");
+    }
+
+    @Test
+    @DisplayName("gema sem armas listadas funciona com qualquer arma; com armas, só com elas")
+    void compatibilidadeDeArma() {
+        SkillGem iceShot = catalog.findSkillGem("Ice Shot").orElseThrow();
+        SkillGem fireball = catalog.findSkillGem("Fireball").orElseThrow();
+        WeaponType bow = catalog.findWeaponType("bow").orElseThrow();
+        WeaponType staff = catalog.findWeaponType("Staff").orElseThrow();
+
+        assertThat(iceShot.usableWith(bow)).isTrue();
+        assertThat(iceShot.usableWith(staff)).isFalse();
+        assertThat(fireball.usableWith(staff)).isTrue();
+        assertThat(fireball.usableWith(bow)).isTrue();
     }
 
     @Test

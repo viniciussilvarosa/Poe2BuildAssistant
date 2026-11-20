@@ -24,6 +24,8 @@ public record BuildViolation(Type type, String field, String itemName) {
         /** O mesmo suporte ou notable aparece mais de uma vez. */
         DUPLICATE_ITEM,
         /** Quantidade de suportes fora do intervalo 1–5. */
-        SUPPORT_COUNT
+        SUPPORT_COUNT,
+        /** A skill principal não pode ser usada com a arma do draft (ex.: Ice Shot com Staff). */
+        SKILL_WEAPON_MISMATCH
     }
 }

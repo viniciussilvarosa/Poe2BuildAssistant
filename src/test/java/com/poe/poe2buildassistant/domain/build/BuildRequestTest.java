@@ -59,6 +59,17 @@ class BuildRequestTest {
     }
 
     @Test
+    @DisplayName("rejeita skill escolhida incompatível com a arma escolhida")
+    void rejeitaSkillIncompativelComArma() {
+        var request = new BuildRequest("x", Constraints.none().withWeaponType("Staff").withMainSkill("Ice Shot"));
+
+        assertThatThrownBy(() -> request.validateAgainst(catalog))
+                .isInstanceOf(InvalidBuildRequest.class)
+                .hasMessageContaining("Ice Shot")
+                .hasMessageContaining("Staff");
+    }
+
+    @Test
     @DisplayName("aceita só o conceito, sem restrições")
     void aceitaSoConceito() {
         assertThatCode(() -> new BuildRequest("arqueiro mágico", Constraints.none()).validateAgainst(catalog))

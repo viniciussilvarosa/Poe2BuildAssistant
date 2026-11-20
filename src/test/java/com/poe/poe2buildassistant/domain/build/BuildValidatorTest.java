@@ -110,6 +110,16 @@ class BuildValidatorTest {
     }
 
     @Test
+    @DisplayName("aponta skill que não pode ser usada com a arma do draft")
+    void apontaSkillIncompativelComArma() {
+        var draft = draft("Witch", "Infernalist", "Staff", "Ice Shot", List.of("Pierce"), FIVE_NOTABLES);
+
+        assertThat(validator.validate(draft, catalog, new BuildRequest("x", Constraints.none())))
+                .extracting(BuildViolation::type, BuildViolation::field, BuildViolation::itemName)
+                .containsExactly(tuple(Type.SKILL_WEAPON_MISMATCH, "mainSkill", "Ice Shot"));
+    }
+
+    @Test
     @DisplayName("sem restrições, qualquer combinação coerente do catálogo é aceita")
     void semRestricoes() {
         var draft = draft("Witch", "Infernalist", "Staff", "Fireball", List.of("Elemental Focus"), FIVE_NOTABLES);

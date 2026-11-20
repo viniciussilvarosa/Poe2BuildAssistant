@@ -34,7 +34,7 @@ public final class CatalogFixtures {
                 .ascendancy(new Ascendancy("Infernalist", WITCH))
                 .weaponType(new WeaponType("Bow"))
                 .weaponType(new WeaponType("Staff"))
-                .skillGem(new SkillGem("Ice Shot"))
+                .skillGem(new SkillGem("Ice Shot", List.of("Bow")))
                 .skillGem(new SkillGem("Fireball"))
                 .supportGem(new SupportGem("Pierce"))
                 .supportGem(new SupportGem("Cold Infusion"))

@@ -14,7 +14,8 @@ import java.util.function.Function;
  * Catálogo de uma versão do jogo: a única fonte de verdade sobre quais classes, ascendências,
  * armas, gemas, notables e estilos existem. Buscas ignoram caixa e espaços nas pontas.
  *
- * <p>Invariantes: nomes únicos por tipo e toda ascendência pertence a uma classe do catálogo.
+ * <p>Invariantes: nomes únicos por tipo, toda ascendência pertence a uma classe do catálogo e toda
+ * arma exigida por uma gema existe no catálogo.
  */
 public final class Catalog {
 
@@ -45,6 +46,14 @@ public final class Catalog {
                                     "Ascendência " + a.name() + " aponta para a classe "
                                             + a.characterClass().name() + ", que não está no catálogo");
                         });
+        for (SkillGem gem : skillGems.values()) {
+            for (String weapon : gem.weaponTypes()) {
+                if (!weaponTypes.containsKey(CatalogNames.normalize(weapon))) {
+                    throw new IllegalArgumentException(
+                            "Gema " + gem.name() + " exige o tipo de arma " + weapon + ", que não está no catálogo");
+                }
+            }
+        }
     }
 
     public static Builder builder(CatalogVersion version) {
