@@ -23,8 +23,10 @@ class ApplicationContextTest {
         var info = flyway.info();
 
         assertThat(info.pending()).isEmpty();
-        assertThat(info.current()).isNotNull();
-        assertThat(info.current().getVersion().getVersion()).isEqualTo("1");
-        assertThat(info.current().getState().isFailed()).isFalse();
+        assertThat(info.all()).isNotEmpty().allSatisfy(m -> {
+            assertThat(m.getState().isApplied()).as("migration %s aplicada", m.getVersion()).isTrue();
+            assertThat(m.getState().isFailed()).as("migration %s sem erro", m.getVersion()).isFalse();
+        });
+        assertThat(info.current().getVersion()).isEqualTo(info.all()[info.all().length - 1].getVersion());
     }
 }
