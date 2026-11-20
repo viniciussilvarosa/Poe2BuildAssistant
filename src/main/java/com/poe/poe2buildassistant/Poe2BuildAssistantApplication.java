@@ -1,4 +1,4 @@
-package com.poe.Poe2BuildAssistant;
+package com.poe.poe2buildassistant;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
