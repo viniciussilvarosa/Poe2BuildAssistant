@@ -74,7 +74,9 @@ class HexagonalArchitectureTest {
                             "..domain..",
                             "..application..",
                             "org.springframework.stereotype..",
-                            "org.springframework.transaction.annotation..")
+                            "org.springframework.transaction.annotation..",
+                            // Logging é transversal: os eventos de observabilidade dos casos de uso (ADR-002 § 1).
+                            "org.slf4j..")
                     .allowEmptyShould(true)
                     .because("só @Service e @Transactional são permitidos na aplicação (ADR-002 § 1)");
 

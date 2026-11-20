@@ -28,7 +28,7 @@ config      ──►  todos (só para montar o grafo de beans)
 ```
 
 - **`domain`:** Java puro. Zero dependência de Spring, JPA, Jackson, Lombok ou Spring AI. Modelos são `record`s ou classes imutáveis com invariantes no construtor.
-- **`application`:** casos de uso. Depende só de `domain` e das próprias portas. **Concessão consciente:** pode usar `@Service` e `@Transactional`; nenhuma outra anotação ou classe de framework.
+- **`application`:** casos de uso. Depende só de `domain` e das próprias portas. **Concessão consciente:** pode usar `@Service` e `@Transactional`; nenhuma outra anotação ou classe de framework. Logging via SLF4J é permitido (eventos de observabilidade dos casos de uso; decisão de 2026-11-20 na #10).
 - **`adapter`:** toda a tecnologia (web, JPA, Spring AI, Spring Security, cliente HTTP do GitHub). Nenhum adaptador conhece outro adaptador.
 - Um adaptador de entrada **nunca** chama um adaptador de saída nem um repositório diretamente. Ele só chama portas de entrada (casos de uso).
 
