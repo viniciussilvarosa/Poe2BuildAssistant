@@ -33,15 +33,22 @@ class ArchitectureRulesChaosTest {
 
     /** O domínio só pode passar se TODAS as regras de domínio aceitarem. */
     private static boolean dominioReprovado(JavaClasses classes) {
-        return List.of(
-                        HexagonalArchitectureTest.domain_nao_depende_de_frameworks,
-                        HexagonalArchitectureTest.domain_nao_depende_de_camadas_externas)
-                .stream()
-                .anyMatch(r -> r.evaluate(classes).hasViolation());
+        return algumaReprova(
+                classes,
+                HexagonalArchitectureTest.domain_so_depende_de_java_e_dominio,
+                HexagonalArchitectureTest.domain_nao_depende_de_camadas_externas);
     }
 
+    /** A aplicação só pode passar se TODAS as regras de aplicação aceitarem. */
     private static boolean aplicacaoReprovada(JavaClasses classes) {
-        return HexagonalArchitectureTest.application_nao_depende_de_adapter.evaluate(classes).hasViolation();
+        return algumaReprova(
+                classes,
+                HexagonalArchitectureTest.application_nao_depende_de_adapter,
+                HexagonalArchitectureTest.application_so_depende_de_dominio_e_portas);
+    }
+
+    private static boolean algumaReprova(JavaClasses classes, ArchRule... rules) {
+        return List.of(rules).stream().anyMatch(r -> r.evaluate(classes).hasViolation());
     }
 
     @Nested

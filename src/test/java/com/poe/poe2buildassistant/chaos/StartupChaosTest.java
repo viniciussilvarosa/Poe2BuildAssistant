@@ -61,11 +61,15 @@ class StartupChaosTest {
     }
 
     @Test
-    @DisplayName("A6: sem GEMINI_API_KEY o startup falha citando a variável")
-    void semChaveFalhaNoStartup() {
+    @DisplayName("A6: sem GEMINI_API_KEY o startup falha e o relatório de falha cita a variável")
+    void semChaveFalhaNoStartup(CapturedOutput output) {
         assertThatThrownBy(() -> run("dev").close())
                 .as("a aplicação não deveria subir sem a chave do Gemini")
-                .hasStackTraceContaining("GEMINI_API_KEY");
+                .isNotNull();
+        assertThat(output.getAll())
+                .as("o desenvolvedor precisa ver qual variável definir")
+                .contains("APPLICATION FAILED TO START")
+                .contains("GEMINI_API_KEY");
     }
 
     @Test
