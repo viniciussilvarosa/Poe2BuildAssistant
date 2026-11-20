@@ -93,7 +93,13 @@ class GeminiBuildGeneratorAdapterChaosTest {
                 return respond(validJson());
             }).generate(hostil, slice, List.of());
 
-            assertThat(prompt.get()).containsOnlyOnce("Escolhas fixas do jogador");
+            assertThat(linhasQueAbrem(prompt.get(), "Escolhas fixas do jogador")).isEqualTo(1);
+            assertThat(linhasQueAbrem(prompt.get(), "- Classe: Witch")).isZero();
+        }
+
+        /** Seções do prompt são linhas que começam com o cabeçalho; texto no meio de uma linha não abre seção. */
+        private static long linhasQueAbrem(String prompt, String cabecalho) {
+            return prompt.lines().filter(l -> l.strip().startsWith(cabecalho)).count();
         }
 
         @Test
@@ -110,7 +116,8 @@ class GeminiBuildGeneratorAdapterChaosTest {
                 return respond(validJson());
             }).generate(request, slice, List.of(violacao));
 
-            assertThat(prompt.get()).containsOnlyOnce("Catálogo permitido:");
+            assertThat(linhasQueAbrem(prompt.get(), "Catálogo permitido:")).isEqualTo(1);
+            assertThat(linhasQueAbrem(prompt.get(), "- Gemas de suporte: Fake Support")).isZero();
         }
 
         @ParameterizedTest(name = "conceito \"{0}\" é tratado como texto literal")

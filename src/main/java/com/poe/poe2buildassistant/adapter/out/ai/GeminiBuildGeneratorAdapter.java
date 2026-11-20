@@ -11,11 +11,16 @@ import com.poe.poe2buildassistant.domain.build.GeneratedBuildDraft;
 import com.poe.poe2buildassistant.domain.catalog.SkillGem;
 import com.poe.poe2buildassistant.domain.shared.GenerationFailed;
 import com.poe.poe2buildassistant.domain.shared.ProviderUnavailable;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -45,7 +50,11 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
 
     private static final Logger log = LoggerFactory.getLogger(GeminiBuildGeneratorAdapter.class);
     /** Gemini informa a espera no corpo do erro 429, ex.: "retryDelay": "38s". */
-    private static final Pattern RETRY_DELAY = Pattern.compile("retryDelay\"?\\s*[:=]\\s*\"?(\\d+)(?:\\.\\d+)?s");
+    private static final Pattern RETRY_DELAY = Pattern.compile("retryDelay\"?\\s*[:=]\\s*\"?(\\d+(?:\\.\\d+)?)s");
+    /** Teto para um retryDelay absurdo vindo do provedor (chaos G1). */
+    private static final long MAX_RETRY_DELAY_SECONDS = Duration.ofHours(24).toSeconds();
+    /** Qualquer sequência de espaço Unicode, inclusive quebras de linha (chaos G6). */
+    private static final Pattern WHITESPACE = Pattern.compile("(?U)\\s+");
 
     private final ChatClient client;
     private final ClockPort clock;
@@ -82,16 +91,19 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
     }
 
     private ChatResponse call(Prompt prompt) {
+        // Virtual thread: a espera pela rede não ocupa o pool comum. O timeout corta a espera do
+        // usuário e INTERROMPE a chamada, para ela não seguir gastando cota (G5); o cliente do
+        // Gemini não tem timeout configurável.
+        FutureTask<ChatResponse> task = new FutureTask<>(() -> client.prompt(prompt).call().chatResponse());
+        Thread.ofVirtual().name("gemini-call").start(task);
         try {
-            // Virtual thread: a espera pela rede não ocupa o pool comum, e o timeout corta a espera
-            // do usuário mesmo sem timeout configurável no cliente do Gemini.
-            return CompletableFuture.supplyAsync(
-                            () -> client.prompt(prompt).call().chatResponse(), r -> Thread.ofVirtual().start(r))
-                    .get(properties.timeout().toMillis(), TimeUnit.MILLISECONDS);
+            return task.get(properties.timeout().toMillis(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
+            task.cancel(true);
             log.atWarn().setMessage("ai.provider.unavailable").addKeyValue("status", "timeout").log();
             throw new ProviderUnavailable(Optional.empty());
         } catch (InterruptedException e) {
+            task.cancel(true);
             Thread.currentThread().interrupt();
             throw new ProviderUnavailable(Optional.empty());
         } catch (ExecutionException e) {
@@ -99,25 +111,55 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
         }
     }
 
+    /**
+     * Provedor indisponível (cota, fora do ar, rede, chave errada) vira {@link ProviderUnavailable}:
+     * regenerar não resolve. Só o resto vira {@link GenerationFailed}.
+     */
     private RuntimeException translate(Throwable failure) {
         for (Throwable t = failure; t != null; t = t.getCause()) {
-            if (t instanceof ApiException api && (api.code() == 429 || api.code() >= 500 || api.code() == 401 || api.code() == 403)) {
-                Optional<Instant> retryAt = api.code() == 429 ? retryDelay(api.message()) : Optional.empty();
-                log.atWarn()
-                        .setMessage("ai.provider.unavailable")
-                        .addKeyValue("status", api.code())
-                        .addKeyValue("retryAt", retryAt.orElse(null))
-                        .log();
-                return new ProviderUnavailable(retryAt);
+            if (t instanceof ApiException api) {
+                if (isMisconfigured(api)) {
+                    // Chave inválida ou sem permissão: problema de configuração, não do pedido (G3).
+                    log.atError().setMessage("ai.provider.misconfigured").addKeyValue("status", api.code()).log();
+                    return new ProviderUnavailable(Optional.empty());
+                }
+                if (api.code() == 429 || api.code() >= 500) {
+                    Optional<Instant> retryAt = api.code() == 429 ? retryDelay(api.message()) : Optional.empty();
+                    log.atWarn()
+                            .setMessage("ai.provider.unavailable")
+                            .addKeyValue("status", api.code())
+                            .addKeyValue("retryAt", retryAt.orElse(null))
+                            .log();
+                    return new ProviderUnavailable(retryAt);
+                }
+            }
+            if (t instanceof IOException) {
+                // Conexão recusada, DNS, socket: o provedor está inalcançável (G4).
+                log.atWarn().setMessage("ai.provider.unavailable").addKeyValue("status", "network").log();
+                return new ProviderUnavailable(Optional.empty());
             }
         }
         log.atError().setMessage("ai.generation.failed").setCause(failure).log();
         return new GenerationFailed();
     }
 
+    private static boolean isMisconfigured(ApiException api) {
+        String message = api.message() == null ? "" : api.message().toLowerCase(Locale.ROOT);
+        return api.code() == 401 || api.code() == 403 || (api.code() == 400 && message.contains("api key"));
+    }
+
+    /**
+     * Converte o retryDelay do Gemini ("38s", "37.6s") num horário. Arredonda para cima (nunca
+     * libera antes da cota, G2) e limita a 24 h (valor absurdo não derruba nada, G1).
+     */
     private Optional<Instant> retryDelay(String message) {
         Matcher m = RETRY_DELAY.matcher(message == null ? "" : message);
-        return m.find() ? Optional.of(clock.now().plusSeconds(Long.parseLong(m.group(1)))) : Optional.empty();
+        if (!m.find()) {
+            return Optional.empty();
+        }
+        BigDecimal seconds = new BigDecimal(m.group(1)).setScale(0, RoundingMode.CEILING);
+        long capped = seconds.min(BigDecimal.valueOf(MAX_RETRY_DELAY_SECONDS)).longValueExact();
+        return Optional.of(clock.now().plusSeconds(capped));
     }
 
     private static String text(ChatResponse response) {
@@ -171,9 +213,13 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
                 "format", converter.getFormat()));
     }
 
-    /** Impede que o conceito feche a tag {@code <conceito>} e se passe por instrução. */
-    private static String neutralize(String concept) {
-        return concept.replace('<', '‹').replace('>', '›');
+    /**
+     * Texto não confiável (conceito do usuário, nomes vindos do LLM) vira uma linha só, sem como
+     * fechar a tag {@code <conceito>}, forjar seções do prompt com quebras de linha ou fechar
+     * aspas (G6).
+     */
+    private static String neutralize(String text) {
+        return WHITESPACE.matcher(text).replaceAll(" ").strip().replace('<', '‹').replace('>', '›').replace('"', '\'');
     }
 
     private static String constraints(Constraints c) {
@@ -205,7 +251,7 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
         }
         return "\nA tentativa anterior foi recusada por estes problemas; corrija todos:\n"
                 + violations.stream()
-                        .map(v -> "- " + v.type() + " em " + v.field() + ": \"" + v.itemName() + "\"")
+                        .map(v -> "- " + v.type() + " em " + v.field() + ": \"" + neutralize(v.itemName()) + "\"")
                         .collect(Collectors.joining("\n"))
                 + "\n";
     }
