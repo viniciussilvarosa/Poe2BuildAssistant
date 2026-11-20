@@ -37,3 +37,7 @@ build/
 
 ### Relatórios de chaos (locais) ###
 chaos-reports/
+
+### Frontend ###
+frontend/node_modules/
+frontend/dist/

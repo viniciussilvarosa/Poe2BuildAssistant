@@ -30,6 +30,9 @@
 		<java.version>25</java.version>
 		<spring-ai.version>2.0.1</spring-ai.version>
 		<archunit.version>1.5.1</archunit.version>
+		<frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
+		<!-- Node fixo do build do frontend: o build não depende do Node instalado na máquina. -->
+		<node.version>v26.13.1</node.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -133,6 +136,84 @@
 
 	<build>
 		<plugins>
+			<!-- Frontend React (frontend/): instala Node em target/, roda npm ci, typecheck, build e testes. -->
+			<plugin>
+				<groupId>com.github.eirslett</groupId>
+				<artifactId>frontend-maven-plugin</artifactId>
+				<version>${frontend-maven-plugin.version}</version>
+				<configuration>
+					<workingDirectory>frontend</workingDirectory>
+					<installDirectory>target</installDirectory>
+					<nodeVersion>${node.version}</nodeVersion>
+				</configuration>
+				<executions>
+					<execution>
+						<id>install-node-and-npm</id>
+						<goals>
+							<goal>install-node-and-npm</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>npm-ci</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>ci --no-audit --no-fund</arguments>
+						</configuration>
+					</execution>
+					<execution>
+						<id>npm-typecheck</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>run typecheck</arguments>
+						</configuration>
+					</execution>
+					<execution>
+						<id>npm-build</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>run build</arguments>
+						</configuration>
+					</execution>
+					<execution>
+						<id>npm-test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>test</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- O build do Vite (frontend/dist) é servido pelo Spring como recurso estático. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-frontend</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+							<resources>
+								<resource>
+									<directory>frontend/dist</directory>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
