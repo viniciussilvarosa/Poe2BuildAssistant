@@ -9,7 +9,6 @@ import com.poe.poe2buildassistant.domain.build.Build;
 import com.poe.poe2buildassistant.domain.build.BuildRequest;
 import com.poe.poe2buildassistant.domain.quota.Requester;
 import jakarta.servlet.http.HttpServletRequest;
-import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
@@ -36,31 +35,32 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 class BuildController {
 
     static final String EXECUTOR = "buildGenerationExecutor";
-    /** Acima do timeout do LLM (25 s) vezes as tentativas, com folga para validação e gravação. */
-    private static final Duration STREAM_TIMEOUT = Duration.ofSeconds(90);
     private static final Logger log = LoggerFactory.getLogger(BuildController.class);
 
     private final GenerateBuildUseCase generateBuild;
     private final GetBuildUseCase getBuild;
     private final RequesterResolver requesters;
     private final Executor executor;
+    private final GenerationStreamTimeout streamTimeout;
 
     BuildController(
             GenerateBuildUseCase generateBuild,
             GetBuildUseCase getBuild,
             RequesterResolver requesters,
-            @Qualifier(EXECUTOR) Executor executor) {
+            @Qualifier(EXECUTOR) Executor executor,
+            GenerationStreamTimeout streamTimeout) {
         this.generateBuild = generateBuild;
         this.getBuild = getBuild;
         this.requesters = requesters;
         this.executor = executor;
+        this.streamTimeout = streamTimeout;
     }
 
     @PostMapping("/generate")
     SseEmitter generate(@RequestBody GenerateBuildRequestDto body, HttpServletRequest http) {
         BuildRequest request = body.toDomain();
         Requester requester = requesters.resolve(http);
-        SseEmitter emitter = new SseEmitter(STREAM_TIMEOUT.toMillis());
+        SseEmitter emitter = new SseEmitter(streamTimeout.value().toMillis());
         SseProgress progress = new SseProgress(emitter);
         log.atInfo().setMessage("http.build.generate.started").addKeyValue("requesterType", requester.type()).log();
 

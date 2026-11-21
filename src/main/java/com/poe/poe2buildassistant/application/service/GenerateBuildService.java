@@ -36,7 +36,7 @@ import org.springframework.stereotype.Service;
  * saída → regeneração com feedback → persistência. Garante a regra dos 100%: só uma build com
  * zero violações é salva e devolvida.
  *
- * <p>Sem {@code @Transactional} aqui de propósito: a chamada ao LLM pode levar até 25 s e não pode
+ * <p>Sem {@code @Transactional} aqui de propósito: a chamada ao LLM pode levar até o app.ai.timeout (60 s) e não pode
  * segurar uma conexão do pool. A transação fica só na persistência.
  */
 @Service
