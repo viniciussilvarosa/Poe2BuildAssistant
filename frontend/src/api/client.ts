@@ -14,14 +14,14 @@ export class ApiError extends Error {
   }
 }
 
-const GENERIC_ERROR = "Não foi possível falar com o servidor. Tente novamente em instantes.";
+export const GENERIC_ERROR = "Não foi possível falar com o servidor. Tente novamente em instantes.";
 
 export function csrfToken(): string | undefined {
   const cookie = document.cookie.split("; ").find((c) => c.startsWith("XSRF-TOKEN="));
   return cookie ? decodeURIComponent(cookie.slice("XSRF-TOKEN=".length)) : undefined;
 }
 
-async function toApiError(response: Response): Promise<ApiError> {
+export async function toApiError(response: Response): Promise<ApiError> {
   try {
     const problem = (await response.json()) as { detail?: string; retryAt?: string };
     return new ApiError(response.status, problem.detail ?? GENERIC_ERROR, problem.retryAt);

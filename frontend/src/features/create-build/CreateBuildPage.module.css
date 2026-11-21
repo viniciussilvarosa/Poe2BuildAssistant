@@ -1,0 +1,113 @@
+.pagina {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 46rem;
+  padding-block: 2.5rem 4rem;
+}
+
+.pagina h1 {
+  font-size: var(--titulo-2);
+}
+
+.apoio {
+  color: var(--cinza-brasa);
+  max-width: var(--medida);
+}
+
+/* Aviso de erro: borda de ouro velho, texto osso; não usa vermelho para não parecer culpa do usuário. */
+.aviso {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 1rem;
+  border-left: 3px solid var(--ouro-orbe);
+  background: var(--pedra);
+}
+
+.conceito {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.conceito label,
+.seletor label {
+  font-weight: 700;
+}
+
+.conceito textarea {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+  font-size: var(--texto-medio);
+  color: var(--osso);
+  background: rgb(18 22 30 / 60%);
+  border: 1px solid var(--pedra-borda);
+  border-radius: 2px;
+  resize: vertical;
+}
+
+.conceito textarea::placeholder {
+  color: var(--cinza-brasa);
+  opacity: 0.85;
+}
+
+.conceito textarea[aria-invalid="true"] {
+  border-color: var(--ouro-orbe);
+}
+
+.erroCampo {
+  color: var(--ouro-orbe-forte);
+  font-size: var(--texto-pequeno);
+}
+
+.escolhas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.escolhas legend {
+  margin-bottom: 0.75rem;
+  color: var(--cinza-brasa);
+  font-size: var(--texto-pequeno);
+}
+
+.seletor {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.seletor select {
+  width: 100%;
+  padding: 0.55rem 2rem 0.55rem 0.65rem;
+  font: inherit;
+  color: var(--osso);
+  background:
+    linear-gradient(45deg, transparent 50%, var(--ouro-velho) 50%) right 1rem center / 6px 6px no-repeat,
+    linear-gradient(-45deg, transparent 50%, var(--ouro-velho) 50%) right calc(1rem - 6px) center / 6px 6px no-repeat,
+    var(--pedra);
+  border: 1px solid var(--pedra-borda);
+  border-radius: 2px;
+  appearance: none;
+}
+
+.rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.patch {
+  color: var(--cinza-brasa);
+  font-size: var(--texto-pequeno);
+}
+
+@media (max-width: 40rem) {
+  .escolhas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
