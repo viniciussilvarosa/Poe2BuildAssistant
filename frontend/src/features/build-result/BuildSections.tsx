@@ -1,7 +1,11 @@
 import type { BuildContent } from "../../api/builds";
 import styles from "./BuildResultPage.module.css";
 
-/** Rótulos pt-BR para os campos que a IA justifica; campo desconhecido aparece como veio. */
+/**
+ * Rótulos pt-BR para os campos que a IA justifica. A chave vem do LLM em formas variadas
+ * ("characterClass", "passiveTree.notables", "gear.weapon", "campaignTips.0"); nenhuma chave técnica
+ * aparece na tela: o que não for reconhecido vira "Escolha da IA" (bug #49).
+ */
 const FIELD_LABELS: Record<string, string> = {
   characterclass: "Classe",
   class: "Classe",
@@ -14,12 +18,26 @@ const FIELD_LABELS: Record<string, string> = {
   mainskill: "Habilidade principal",
   skill: "Habilidade principal",
   playstyle: "Estilo de jogo",
+  supports: "Gemas de suporte",
+  supportgems: "Gemas de suporte",
+  suportes: "Gemas de suporte",
+  notables: "Notables",
+  passivetreenotables: "Notables",
+  passivetree: "Árvore de passivas",
+  passivetreedirection: "Árvore de passivas",
+  gear: "Equipamento",
+  gearweapon: "Equipamento",
+  geararmour: "Equipamento",
+  gearaccessories: "Equipamento",
+  campaigntips: "Dicas de campanha",
 };
 
 /** O LLM preenche field/reason livremente e o validador não confere essa lista (chaos C1a). */
 function fieldLabel(field: string | null | undefined) {
   if (!field?.trim()) return "Escolha da IA";
-  return FIELD_LABELS[field.trim().toLowerCase().replace(/[\s_-]/g, "")] ?? field;
+  // Sem espaço, _ e -, sem índices de lista ("campaignTips.0"); tenta o caminho inteiro e depois a raiz.
+  const parts = field.trim().toLowerCase().replace(/[\s_-]/g, "").split(".").filter((p) => p && !/^\d+$/.test(p));
+  return FIELD_LABELS[parts.join("")] ?? FIELD_LABELS[parts[0] ?? ""] ?? "Escolha da IA";
 }
 
 /* Todo texto vem do LLM: só como texto (React escapa), nunca como HTML. */
