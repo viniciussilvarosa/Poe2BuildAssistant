@@ -9,6 +9,13 @@ import java.util.UUID;
  */
 public record User(UUID id, String googleSub, String email, String displayName, Role role) {
 
+    public static final int MAX_DISPLAY_NAME = 200;
+    public static final int MAX_EMAIL = 320;
+
+    private static String cut(String text, int max) {
+        return text.length() <= max ? text : text.substring(0, max);
+    }
+
     public enum Role {
         USER,
         ADMIN
@@ -19,8 +26,9 @@ public record User(UUID id, String googleSub, String email, String displayName, 
         if (googleSub == null || googleSub.isBlank()) {
             throw new IllegalArgumentException("usuário sem sub do Google");
         }
-        email = email == null ? "" : email.strip();
-        displayName = displayName == null || displayName.isBlank() ? "Jogador" : displayName.strip();
+        // Os limites das colunas: um nome longo do Google não pode impedir o login (chaos L7).
+        email = cut(email == null ? "" : email.strip(), MAX_EMAIL);
+        displayName = displayName == null || displayName.isBlank() ? "Jogador" : cut(displayName.strip(), MAX_DISPLAY_NAME);
         Objects.requireNonNull(role, "usuário sem papel");
     }
 }

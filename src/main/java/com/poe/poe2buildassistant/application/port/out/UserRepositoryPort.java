@@ -7,6 +7,6 @@ public interface UserRepositoryPort {
 
     Optional<User> findByGoogleSub(String googleSub);
 
-    /** Cria ou atualiza pelo id; o sub do Google é único. */
+    /** Cria ou atualiza pelo sub do Google; devolve o usuário com o id que ficou no banco. */
     User save(User user);
 }

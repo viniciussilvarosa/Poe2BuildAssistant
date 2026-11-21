@@ -6,10 +6,12 @@ import com.poe.poe2buildassistant.domain.build.Build;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Quem está logado e o histórico dele. O SecurityConfig exige login em /api/me/**. */
 @RestController
@@ -41,11 +43,20 @@ class MeController {
 
     @GetMapping
     MeResponse me(@AuthenticationPrincipal SessionUser user) {
-        return new MeResponse(user.displayName(), user.role());
+        SessionUser me = required(user);
+        return new MeResponse(me.displayName(), me.role());
     }
 
     @GetMapping("/builds")
     List<MyBuildItem> myBuilds(@AuthenticationPrincipal SessionUser user) {
-        return listMyBuilds.list(user.userId()).stream().map(MyBuildItem::from).toList();
+        return listMyBuilds.list(required(user).userId()).stream().map(MyBuildItem::from).toList();
+    }
+
+    /** Sessão sem a conta do app (ex.: login sem o escopo openid) vale como visitante (chaos L5). */
+    private static SessionUser required(SessionUser user) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Entre com o Google para ver esta página.");
+        }
+        return user;
     }
 }

@@ -32,8 +32,9 @@ public class ProvisionUserService implements ProvisionUserUseCase {
     public Provisioned provision(GoogleIdentity identity) {
         Optional<User> existing = users.findByGoogleSub(identity.sub());
         User.Role role = identity.emailVerified() && settings.isAdmin(identity.email()) ? User.Role.ADMIN : User.Role.USER;
-        UUID id = existing.map(User::id).orElseGet(UUID::randomUUID);
-        User user = users.save(new User(id, identity.sub(), identity.email(), identity.name(), role));
+        User user = users.save(new User(
+                existing.map(User::id).orElseGet(UUID::randomUUID), identity.sub(), identity.email(), identity.name(), role));
+        UUID id = user.id();
 
         // Só o id vai para o log: e-mail e nome são dados pessoais.
         log.atInfo()

@@ -31,18 +31,24 @@ class UserPersistenceAdapter implements UserRepositoryPort {
                 .optional();
     }
 
+    /**
+     * Upsert pelo sub do Google: dois logins simultâneos da mesma conta nova (duas abas) caem na
+     * mesma linha, e o id devolvido é sempre o que ficou no banco (chaos L6).
+     */
     @Override
     @Transactional
     public User save(User user) {
-        jdbc.sql("""
+        UUID id = jdbc.sql("""
                         INSERT INTO app_user (id, google_sub, email, display_name, role)
                         VALUES (?, ?, ?, ?, ?)
-                        ON CONFLICT (id) DO UPDATE
+                        ON CONFLICT (google_sub) DO UPDATE
                         SET email = EXCLUDED.email, display_name = EXCLUDED.display_name,
                             role = EXCLUDED.role, last_login_at = now()
+                        RETURNING id
                         """)
                 .params(user.id(), user.googleSub(), user.email(), user.displayName(), user.role().name())
-                .update();
-        return user;
+                .query(UUID.class)
+                .single();
+        return new User(id, user.googleSub(), user.email(), user.displayName(), user.role());
     }
 }

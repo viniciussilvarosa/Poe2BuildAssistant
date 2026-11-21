@@ -1,7 +1,6 @@
 package com.poe.poe2buildassistant.adapter.out.persistence.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.poe.poe2buildassistant.TestcontainersConfiguration;
 import com.poe.poe2buildassistant.domain.user.User;
@@ -12,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.dao.DataIntegrityViolationException;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -37,11 +35,14 @@ class UserPersistenceAdapterTest {
     }
 
     @Test
-    @DisplayName("o banco recusa dois usuários com o mesmo sub")
+    @DisplayName("mesmo sub com outro id não cria segunda conta: atualiza a existente e devolve o id dela")
     void subUnico() {
-        adapter.save(new User(UUID.randomUUID(), "g-1", "a@exemplo.test", "A", User.Role.USER));
+        UUID original = UUID.randomUUID();
+        adapter.save(new User(original, "g-1", "a@exemplo.test", "A", User.Role.USER));
 
-        assertThatThrownBy(() -> adapter.save(new User(UUID.randomUUID(), "g-1", "b@exemplo.test", "B", User.Role.USER)))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        User saved = adapter.save(new User(UUID.randomUUID(), "g-1", "b@exemplo.test", "B", User.Role.USER));
+
+        assertThat(saved.id()).isEqualTo(original);
+        assertThat(adapter.findByGoogleSub("g-1")).hasValueSatisfying(u -> assertThat(u.displayName()).isEqualTo("B"));
     }
 }
