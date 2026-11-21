@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ class GeminiBuildGeneratorAdapterTest {
             new BuildRequest("arqueiro mágico", Constraints.none().withCharacterClass("Ranger").withMainSkill("Ice Shot"));
     private final CatalogSlice slice = CatalogSlice.of(CatalogFixtures.catalog(), rangerBow, 50);
     private final AtomicReference<Prompt> captured = new AtomicReference<>();
+    private Instant now = NOW;
 
     private static String fixture(String name) throws IOException {
         return new ClassPathResource("fixtures/gemini/" + name).getContentAsString(StandardCharsets.UTF_8);
@@ -50,7 +52,7 @@ class GeminiBuildGeneratorAdapterTest {
     }
 
     private GeminiBuildGeneratorAdapter adapter(ChatModel model) {
-        return new GeminiBuildGeneratorAdapter(ChatClient.builder(model), () -> NOW, new AiProperties(Duration.ofSeconds(5)));
+        return new GeminiBuildGeneratorAdapter(ChatClient.builder(model), () -> now, new AiProperties(Duration.ofSeconds(5)));
     }
 
     private String promptText() {
@@ -92,6 +94,44 @@ class GeminiBuildGeneratorAdapterTest {
                 .contains("Pierce")
                 .doesNotContain("Fireball")
                 .doesNotContain("Infernalist");
+    }
+
+    @Test
+    @DisplayName("depois de um 429 com retryAt, recusa na hora até o horário, sem chamar o provedor (#64)")
+    void disjuntorAteORetryAt() {
+        AtomicInteger chamadas = new AtomicInteger();
+        ChatModel semCota = prompt -> {
+            chamadas.incrementAndGet();
+            throw new RuntimeException(new ApiException(429, "RESOURCE_EXHAUSTED", "{\"retryDelay\": \"38s\"}"));
+        };
+        var adapter = adapter(semCota);
+
+        assertThatThrownBy(() -> adapter.generate(rangerBow, slice, List.of()))
+                .isInstanceOfSatisfying(ProviderUnavailable.class, e -> assertThat(e.retryAt()).contains(NOW.plusSeconds(38)));
+        assertThatThrownBy(() -> adapter.generate(rangerBow, slice, List.of()))
+                .isInstanceOfSatisfying(ProviderUnavailable.class, e -> assertThat(e.retryAt()).contains(NOW.plusSeconds(38)));
+
+        assertThat(chamadas).hasValue(1);
+    }
+
+    @Test
+    @DisplayName("passado o retryAt, volta a chamar o provedor")
+    void disjuntorLiberaDepois() throws IOException {
+        AtomicInteger chamadas = new AtomicInteger();
+        String valido = fixture("build-response-valid.json");
+        ChatModel model = prompt -> {
+            if (chamadas.incrementAndGet() == 1) {
+                throw new RuntimeException(new ApiException(429, "RESOURCE_EXHAUSTED", "{\"retryDelay\": \"38s\"}"));
+            }
+            return new ChatResponse(List.of(new Generation(new AssistantMessage(valido))));
+        };
+        var adapter = adapter(model);
+        assertThatThrownBy(() -> adapter.generate(rangerBow, slice, List.of())).isInstanceOf(ProviderUnavailable.class);
+
+        now = NOW.plusSeconds(39);
+
+        assertThat(adapter.generate(rangerBow, slice, List.of()).mainSkill()).isEqualTo("Ice Shot");
+        assertThat(chamadas).hasValue(2);
     }
 
     @Test
