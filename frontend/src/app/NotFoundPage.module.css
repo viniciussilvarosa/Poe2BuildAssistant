@@ -1,0 +1,14 @@
+.secao {
+  display: grid;
+  gap: 1rem;
+  max-width: var(--medida);
+  padding-block: 4rem;
+}
+
+.secao h1 {
+  font-size: var(--titulo-2);
+}
+
+.secao p {
+  color: var(--cinza-brasa);
+}

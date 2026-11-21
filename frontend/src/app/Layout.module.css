@@ -1,0 +1,77 @@
+.pagina {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  padding: 1.25rem var(--margem);
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--fonte-titulo);
+  font-weight: 800;
+  font-size: var(--texto-medio);
+  text-decoration: none;
+}
+
+.simbolo {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.simbolo path {
+  fill: none;
+  stroke: var(--osso);
+  stroke-width: 2.5;
+}
+
+.simbolo circle {
+  fill: var(--osso);
+}
+
+.menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  font-size: var(--texto-base);
+}
+
+.menu a {
+  color: var(--cinza-brasa);
+  text-decoration: none;
+  padding-block: 0.25rem;
+}
+
+.menu a:hover,
+.menu a[aria-current="page"] {
+  color: var(--osso);
+}
+
+.menu a[aria-current="page"] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+.menu .entrar {
+  color: var(--osso);
+  font-weight: 500;
+}
+
+.conteudo {
+  padding: 0 var(--margem);
+}
+
+.rodape {
+  padding: 2rem var(--margem);
+  color: var(--cinza-brasa);
+  font-size: var(--texto-pequeno);
+}

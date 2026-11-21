@@ -1,0 +1,32 @@
+/*
+ * Tokens do Mentor de Builds (aprovados na #2). Toda tela parte daqui.
+ * Ouro de orbe é exclusivo da ação principal; as cores de gema só codificam informação
+ * (atributo de gemas e regiões da árvore), nunca decoração.
+ */
+:root {
+  --ardosia: #1e2229;
+  --pedra: #2a3039;
+  --pedra-borda: #3a414c;
+  --osso: #e9e3d7;
+  --cinza-brasa: #9aa1ab;
+  --ouro-orbe: #e8b64c;
+  --ouro-orbe-forte: #f2c768;
+
+  --gema-forca: #c8553d;
+  --gema-destreza: #6aa84f;
+  --gema-inteligencia: #4a86c5;
+
+  --fonte-titulo: "Alegreya", Georgia, serif;
+  --fonte-texto: "Alegreya Sans", system-ui, sans-serif;
+
+  /* Escala tipográfica clássica (Bringhurst): 14 · 16 · 18 · 21 · 24 · 36 · 48 · 60 */
+  --texto-pequeno: 0.875rem;
+  --texto-base: 1.125rem;
+  --texto-medio: 1.3125rem;
+  --titulo-2: 2.25rem;
+  --titulo-1: clamp(2.5rem, 2rem + 3vw, 3.75rem);
+
+  --medida: 34rem; /* ~65 caracteres de Alegreya Sans */
+  --raio: 4px;
+  --margem: clamp(1rem, 0.5rem + 3vw, 3rem);
+}
