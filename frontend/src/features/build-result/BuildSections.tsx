@@ -16,21 +16,25 @@ const FIELD_LABELS: Record<string, string> = {
   playstyle: "Estilo de jogo",
 };
 
-function fieldLabel(field: string) {
+/** O LLM preenche field/reason livremente e o validador não confere essa lista (chaos C1a). */
+function fieldLabel(field: string | null | undefined) {
+  if (!field?.trim()) return "Escolha da IA";
   return FIELD_LABELS[field.trim().toLowerCase().replace(/[\s_-]/g, "")] ?? field;
 }
 
 /* Todo texto vem do LLM: só como texto (React escapa), nunca como HTML. */
 
 export function SummarySection({ build }: { build: BuildContent }) {
+  // Justificativa sem texto não explica nada: some, em vez de virar rótulo solto (chaos C1b).
+  const reasons = (build.choiceReasons ?? []).filter((c) => c?.reason?.trim());
   return (
     <section aria-labelledby="secao-resumo">
       <h2 id="secao-resumo">Resumo &amp; Sinergia</h2>
       <p>{build.summary}</p>
       {build.synergy && <p>{build.synergy}</p>}
-      {build.choiceReasons.length > 0 && (
+      {reasons.length > 0 && (
         <dl className={styles.escolhas}>
-          {build.choiceReasons.map((c, i) => (
+          {reasons.map((c, i) => (
             <div key={i}>
               <dt>{fieldLabel(c.field)}</dt>
               <dd>{c.reason}</dd>

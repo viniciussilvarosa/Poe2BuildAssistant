@@ -11,6 +11,11 @@ type Load = { status: "loading" } | { status: "ready"; build: SavedBuild } | { s
 
 export function BuildResultPage() {
   const { id = "" } = useParams();
+  // Uma montagem por build: ir de /builds/A para /builds/B sem sair da tela não pode manter A (chaos C2a).
+  return <BuildResult key={id} id={id} />;
+}
+
+function BuildResult({ id }: { id: string }) {
   const fromGeneration = (useLocation().state as { build?: SavedBuild } | null)?.build;
   const initial: Load = fromGeneration?.id === id ? { status: "ready", build: fromGeneration } : { status: "loading" };
   const [load, setLoad] = useState<Load>(initial);
