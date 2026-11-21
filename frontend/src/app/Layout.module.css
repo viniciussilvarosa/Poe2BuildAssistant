@@ -75,6 +75,24 @@
   border-color: var(--osso);
 }
 
+/* Logado: nome + "Sair" no mesmo quadro de "Entrar". */
+span.entrar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-block: 0.25rem;
+}
+
+span.entrar button {
+  padding: 0;
+  font: inherit;
+  color: var(--cinza-brasa);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .conteudo {
   padding: 0 var(--margem);
 }

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { routes } from "../../app/routes";
@@ -42,13 +42,14 @@ describe("HomePage", () => {
     expect(screen.getByLabelText("Que personagem você quer jogar?")).toHaveValue("monge de raios");
   });
 
-  it("menu principal tem as seções do produto", () => {
+  it("menu principal tem as seções do produto", async () => {
     renderAt("/");
 
     const nav = screen.getByRole("navigation", { name: "Principal" });
     expect(nav).toHaveTextContent("Início");
     expect(nav).toHaveTextContent("Minhas builds");
-    expect(nav).toHaveTextContent("Entrar");
+    // "Entrar com Google" aparece quando a sessão termina de carregar (visitante).
+    await waitFor(() => expect(nav).toHaveTextContent("Entrar"));
   });
 
   it("rota desconhecida mostra página de não encontrado com caminho de volta", () => {
