@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { rateBuild, type Rating } from "../../api/builds";
 import styles from "./BuildResultPage.module.css";
 
@@ -15,15 +15,20 @@ export function RatingButtons({ buildId }: { buildId: string }) {
   const [selected, setSelected] = useState<Rating>();
   const [saved, setSaved] = useState(false);
   const [failed, setFailed] = useState(false);
+  // Só a resposta do clique mais recente vale: uma falha atrasada do 👍 não pode apagar o 👎
+  // que o servidor já registrou depois (chaos R7).
+  const latest = useRef(0);
 
   function rate(value: Rating) {
     const previous = selected;
+    const request = ++latest.current;
     setSelected(value);
     setSaved(false);
     setFailed(false);
     rateBuild(buildId, value).then(
-      () => setSaved(true),
+      () => request === latest.current && setSaved(true),
       () => {
+        if (request !== latest.current) return;
         setSelected(previous);
         setFailed(true);
       },
