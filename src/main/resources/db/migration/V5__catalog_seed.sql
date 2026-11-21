@@ -12,7 +12,12 @@
 -- Ajustes futuros passam pela administração do catálogo (#17/#18); esta migration nunca é editada
 -- depois de aplicada. Rollback: nova migration removendo a versão (ON DELETE CASCADE).
 
-INSERT INTO catalog_version (patch, status, published_at) VALUES ('0.5', 'PUBLISHED', TIMESTAMPTZ '2026-11-21 00:00:00+00');
+-- Só publica se ainda não houver catálogo publicado (ex.: um publicado à mão num banco de dev).
+-- Sem a versão, todos os INSERTs abaixo selecionam zero linhas e a migration termina sem efeito,
+-- em vez de violar uq_catalog_version_single_published e impedir o app de subir (chaos S2).
+INSERT INTO catalog_version (patch, status, published_at)
+SELECT '0.5', 'PUBLISHED', TIMESTAMPTZ '2026-11-21 00:00:00+00'
+WHERE NOT EXISTS (SELECT 1 FROM catalog_version WHERE status = 'PUBLISHED');
 
 -- Classes (8)
 INSERT INTO character_class (catalog_version_id, name)

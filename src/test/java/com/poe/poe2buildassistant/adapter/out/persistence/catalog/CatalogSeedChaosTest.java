@@ -17,6 +17,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
@@ -26,9 +27,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 /** Ataques à carga inicial do catálogo (card #5, PR #34). */
 class CatalogSeedChaosTest {
 
-    /** Mesmo limite de app.generation.slice-max-items: o que o LLM realmente vê do catálogo. */
-    private static final int SLICE_MAX = 60;
-
     @Nested
     @DataJpaTest
     @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -37,6 +35,8 @@ class CatalogSeedChaosTest {
     class RecorteComCatalogoReal {
 
         @Autowired private CatalogPersistenceAdapter adapter;
+        /** O limite configurado de verdade: o que o LLM realmente vê do catálogo. */
+        @Value("${app.generation.slice-max-items}") private int sliceMax;
         private Catalog catalog;
 
         @BeforeEach
@@ -45,7 +45,7 @@ class CatalogSeedChaosTest {
         }
 
         private CatalogSlice slice(Constraints constraints) {
-            return CatalogSlice.of(catalog, new BuildRequest("arqueiro que congela tudo", constraints), SLICE_MAX);
+            return CatalogSlice.of(catalog, new BuildRequest("arqueiro que congela tudo", constraints), sliceMax);
         }
 
         @Test
