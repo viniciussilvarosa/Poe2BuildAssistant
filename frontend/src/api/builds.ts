@@ -1,4 +1,4 @@
-import { ApiError, csrfToken, GENERIC_ERROR, toApiError } from "./client";
+import { ApiError, apiGet, csrfToken, GENERIC_ERROR, toApiError } from "./client";
 
 /** Corpo do POST /api/builds/generate. Seletor ausente = "Deixar a IA escolher". */
 export interface BuildRequest {
@@ -17,10 +17,40 @@ export interface ProgressEvent {
   percent: number;
 }
 
-/** Build salva, como o evento done e GET /api/builds/{id} devolvem. O conteúdo é tratado na #13. */
+/** Conteúdo validado da build (GeneratedBuildDraft). Textos em pt-BR, nomes de jogo em inglês. */
+export interface BuildContent {
+  summary: string;
+  synergy: string;
+  /** Por que a IA escolheu cada campo deixado em aberto; field é livre (ex.: "characterClass"). */
+  choiceReasons: { field: string; reason: string }[];
+  characterClass: string;
+  ascendancy: string;
+  weaponType: string;
+  mainSkill: string;
+  supports: string[];
+  passiveTree: { direction: string; notables: string[] };
+  gear: { weapon: string[]; armour: string[]; accessories: string[] };
+  campaignTips: string[];
+}
+
+/** Build salva, como o evento done e GET /api/builds/{id} devolvem (BuildResponse). */
 export interface SavedBuild {
   id: string;
-  [field: string]: unknown;
+  createdAt: string;
+  request: {
+    concept: string;
+    characterClass: string | null;
+    ascendancy: string | null;
+    weaponType: string | null;
+    mainSkill: string | null;
+    playstyle: string | null;
+  };
+  build: BuildContent;
+}
+
+/** Reabre uma build salva (link direto, "Minhas builds"). */
+export function getBuild(id: string): Promise<SavedBuild> {
+  return apiGet<SavedBuild>(`/api/builds/${encodeURIComponent(id)}`);
 }
 
 interface SseMessage {
@@ -59,7 +89,7 @@ export async function generateBuild(request: BuildRequest, onProgress: (event: P
       if (message.event === "progress") {
         onProgress(data as unknown as ProgressEvent);
       } else if (message.event === "done") {
-        return data as SavedBuild;
+        return data as unknown as SavedBuild;
       } else if (message.event === "error") {
         const status = typeof data.status === "number" ? data.status : 500;
         throw new ApiError(status, String(data.detail ?? GENERIC_ERROR), data.retryAt as string | undefined);
