@@ -13,6 +13,7 @@ import com.poe.poe2buildassistant.adapter.in.web.RequesterResolver;
 import com.poe.poe2buildassistant.application.port.in.GenerateBuildUseCase;
 import com.poe.poe2buildassistant.application.port.in.GetBuildUseCase;
 import com.poe.poe2buildassistant.application.port.in.GetCatalogOptionsUseCase;
+import com.poe.poe2buildassistant.application.port.in.ListMyBuildsUseCase;
 import com.poe.poe2buildassistant.config.SecurityConfig;
 import jakarta.servlet.http.Cookie;
 import java.util.concurrent.Executor;
@@ -56,6 +57,7 @@ class SecurityChaosTest {
     @MockitoBean private GenerateBuildUseCase generateBuild;
     @MockitoBean private GetBuildUseCase getBuild;
     @MockitoBean private GetCatalogOptionsUseCase getCatalogOptions;
+    @MockitoBean private ListMyBuildsUseCase listMyBuilds;
 
     @Autowired private MockMvc mvc;
 
@@ -79,7 +81,8 @@ class SecurityChaosTest {
                 })
         void adminNuncaAlcancavel(String path) throws Exception {
             int status = mvc.perform(get(path)).andReturn().getResponse().getStatus();
-            assertThat(status).as("status para %s (nunca 2xx)", path).isIn(400, 403, 404);
+            // 401 desde o login Google (#14): visitante na API recebe 401, não redirecionamento.
+            assertThat(status).as("status para %s (nunca 2xx)", path).isIn(400, 401, 403, 404);
         }
     }
 
