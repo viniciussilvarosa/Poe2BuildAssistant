@@ -94,7 +94,8 @@ class PassiveTreeImportChaosTest {
         Source.behaviour = () -> {
             // O admin publica o rascunho em outra aba enquanto o export ainda está descendo.
             Thread outraAba = new Thread(() -> {
-                jdbc.sql("UPDATE catalog_version SET status = 'DRAFT' WHERE patch = '0.5'").update();
+                // Como a publicação real (#17): arquiva a vigente e publica o rascunho.
+                jdbc.sql("UPDATE catalog_version SET status = 'ARCHIVED' WHERE patch = '0.5'").update();
                 jdbc.sql("UPDATE catalog_version SET status = 'PUBLISHED' WHERE id = ?").param(draft).update();
             });
             outraAba.start();

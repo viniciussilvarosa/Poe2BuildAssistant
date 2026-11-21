@@ -38,6 +38,37 @@ class ImportPassiveTreeServiceTest {
         public void replaceNotables(long versionId, List<PassiveNotable> replacement) {
             notables.put(versionId, new ArrayList<>(replacement));
         }
+
+        // O import não usa as operações de curadoria (#17).
+        @Override
+        public Optional<CatalogVersion> findDraft() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CatalogVersion createDraftFromPublished(String patch) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public com.poe.poe2buildassistant.domain.catalog.Catalog loadVersion(long versionId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void saveItem(long versionId, com.poe.poe2buildassistant.domain.catalog.CatalogItem item) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void removeItem(long versionId, com.poe.poe2buildassistant.domain.catalog.CatalogItem.Type type, String name) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CatalogVersion publish(long draftId) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private final FakeCatalogs catalogs = new FakeCatalogs();

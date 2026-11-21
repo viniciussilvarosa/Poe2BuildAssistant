@@ -25,7 +25,7 @@ public final class CatalogNames {
         return name == null ? "" : APOSTROPHES.matcher(collapse(name)).replaceAll("'").toLowerCase(Locale.ROOT);
     }
 
-    static String requireName(String name, String kind) {
+    public static String requireName(String name, String kind) {
         String collapsed = name == null ? "" : collapse(name);
         if (collapsed.isEmpty()) {
             throw new IllegalArgumentException(kind + " sem nome");
