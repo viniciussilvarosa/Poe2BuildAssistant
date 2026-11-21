@@ -12,6 +12,9 @@ public record CatalogVersion(long id, String patch, Status status) {
         ARCHIVED
     }
 
+    /** Tamanho da coluna catalog_version.patch. */
+    public static final int MAX_PATCH_LENGTH = 50;
+
     public CatalogVersion {
         patch = CatalogNames.requireName(patch, "versão do catálogo");
         Objects.requireNonNull(status, "versão do catálogo sem status");

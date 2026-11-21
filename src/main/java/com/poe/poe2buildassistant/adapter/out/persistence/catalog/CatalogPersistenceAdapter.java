@@ -20,9 +20,11 @@ import com.poe.poe2buildassistant.domain.catalog.WeaponType;
 import com.poe.poe2buildassistant.domain.shared.CatalogNotPublished;
 import com.poe.poe2buildassistant.domain.shared.CatalogVersionNotEditable;
 import com.poe.poe2buildassistant.domain.shared.CatalogVersionNotFound;
+import com.poe.poe2buildassistant.domain.shared.DraftAlreadyExists;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -173,6 +175,11 @@ class CatalogPersistenceAdapter implements CatalogRepositoryPort, CatalogEditorP
                 .query(Long.class)
                 .optional()
                 .orElseThrow(CatalogNotPublished::new);
+        // Com a publicada travada, duas criações simultâneas passam por aqui uma de cada vez: a
+        // segunda vê o rascunho da primeira e recebe 409, não o 500 do índice único (chaos C1).
+        findDraft().ifPresent(d -> {
+            throw new DraftAlreadyExists(d.patch());
+        });
         long to = jdbc.sql("INSERT INTO catalog_version (patch, status) VALUES (?, 'DRAFT') RETURNING id")
                 .param(patch)
                 .query(Long.class)
@@ -257,12 +264,20 @@ class CatalogPersistenceAdapter implements CatalogRepositoryPort, CatalogEditorP
         return new CatalogVersion(draftId, patch, CatalogVersion.Status.PUBLISHED);
     }
 
-    /** Busca pelo nome como o domínio compara: sem caixa (os nomes já chegam sem espaços extras). */
+    /**
+     * Busca pelo nome com a mesma regra do domínio ({@link CatalogNames#normalize}: caixa, espaços e
+     * apóstrofos). Com um {@code lower(name)} em SQL, "Alchemist’s Boon" não achava "Alchemist's
+     * Boon", virava uma segunda linha e o rascunho deixava de carregar (chaos C2).
+     */
     private Optional<Long> idOf(String table, long versionId, String name) {
-        return jdbc.sql("SELECT id FROM " + table + " WHERE catalog_version_id = ? AND lower(name) = lower(?)")
-                .params(versionId, CatalogNames.requireName(name, "item"))
-                .query(Long.class)
-                .optional();
+        String key = CatalogNames.normalize(name);
+        return jdbc.sql("SELECT id, name FROM " + table + " WHERE catalog_version_id = ?")
+                .param(versionId)
+                .query((rs, n) -> CatalogNames.normalize(rs.getString("name")).equals(key) ? rs.getLong("id") : null)
+                .list()
+                .stream()
+                .filter(Objects::nonNull)
+                .findFirst();
     }
 
     @Override
