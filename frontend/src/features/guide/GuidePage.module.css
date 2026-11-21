@@ -1,0 +1,230 @@
+.guia {
+  display: grid;
+  gap: 3rem;
+  max-width: 64rem;
+  padding-block: 3rem 4rem;
+}
+
+/* ---- Abertura e índice ---- */
+
+/* Título à esquerda e índice à direita, na mesma grade das seções. */
+.abertura {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
+  align-items: center;
+  gap: 2rem 3rem;
+}
+
+.intro {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.abertura h1 {
+  font-size: var(--titulo-1);
+  max-width: 18ch;
+  text-wrap: balance;
+}
+
+.apoio {
+  color: var(--cinza-brasa);
+  font-size: var(--texto-medio);
+  max-width: var(--medida);
+}
+
+.indiceTitulo {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  color: var(--osso);
+}
+
+.indice ol {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: item;
+}
+
+.indice li {
+  counter-increment: item;
+}
+
+.indice li::before {
+  content: counter(item) ".";
+  display: inline-block;
+  min-width: 1.6rem;
+  color: var(--ouro-velho);
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+}
+
+.indice a {
+  color: var(--osso);
+  text-underline-offset: 0.25em;
+}
+
+/* ---- Seções ---- */
+
+/* Texto à esquerda, arte à direita; no celular a arte desce para baixo do texto. */
+.secao {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
+  align-items: center;
+  gap: 1.5rem 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--ouro-velho);
+  /* O menu não cobre o título ao seguir um link do índice. */
+  scroll-margin-top: 1.5rem;
+}
+
+.texto {
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+}
+
+.secao h2,
+.conceito h2 {
+  font-size: var(--titulo-2);
+  line-height: 1.15;
+}
+
+.secao p {
+  color: var(--cinza-brasa);
+  max-width: var(--medida);
+}
+
+/* ---- Arte ao lado da seção ---- */
+
+.figura {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  /* O Layout isola a página (isolation: isolate): sem um fundo aqui, o "lighten" misturaria a
+     imagem com transparente e o preto continuaria aparecendo. */
+  background: var(--ardosia);
+}
+
+.figura img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Personagem sobre fundo preto: "lighten" faz o preto virar a cor da página, sem caixa preta. As
+   bordas se dissolvem para esconder o resto do fundo original. */
+.recorte img {
+  aspect-ratio: 4 / 5;
+  /* contain: o personagem aparece inteiro (cover cortava a besta do Mercenary). */
+  object-fit: contain;
+  mix-blend-mode: lighten;
+  mask-image: radial-gradient(ellipse 70% 75% at 50% 45%, #000 55%, transparent 100%);
+}
+
+/* Ilustração com cenário: moldura fina, como os painéis do site. */
+.ilustracao img {
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border: 1px solid var(--ouro-velho);
+  border-radius: 2px;
+  box-shadow: 0 0 0 3px rgb(18 22 30 / 75%), 0 0 0 4px rgb(138 109 59 / 45%);
+}
+
+.figura figcaption {
+  color: var(--cinza-brasa);
+  font-size: var(--texto-pequeno);
+  font-style: italic;
+  text-align: center;
+}
+
+/* ---- Classes: nome em destaque, estilo ao lado ---- */
+
+.classes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 2rem;
+  margin: 0.25rem 0 0;
+}
+
+.classes div,
+.dicas div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.classes dt,
+.dicas dt {
+  color: var(--osso);
+  font-weight: 700;
+}
+
+.classes dd,
+.dicas dd {
+  margin: 0;
+  color: var(--cinza-brasa);
+  font-size: var(--texto-pequeno);
+}
+
+/* ---- Ideias de conceito: mesmo visual dos exemplos da tela inicial ---- */
+
+/* Texto corrido, sem limite de medida: as ideias ficam na mesma linha e só quebram se faltar espaço. */
+.secao .ideias {
+  max-width: none;
+  color: var(--cinza-brasa);
+}
+
+.rotulo {
+  font-size: var(--texto-pequeno);
+}
+
+.ideias a {
+  color: var(--osso);
+  text-decoration: underline dotted;
+  text-underline-offset: 0.25em;
+}
+
+.ideias a:hover {
+  text-decoration-style: solid;
+}
+
+/* ---- Como descrever o personagem ---- */
+
+.conceito {
+  scroll-margin-top: 1.5rem;
+}
+
+.conceito p {
+  color: var(--cinza-brasa);
+  max-width: var(--medida);
+}
+
+.dicas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem 2rem;
+  margin: 0;
+}
+
+.comparacao q {
+  color: var(--osso);
+}
+
+@media (max-width: 52rem) {
+  .abertura,
+  .secao {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .figura {
+    max-width: 18rem;
+  }
+}
+
+@media (max-width: 40rem) {
+  .classes,
+  .dicas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

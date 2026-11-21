@@ -22,6 +22,9 @@ export function HomePage() {
           Descreva a ideia com suas palavras. Você recebe um plano inicial de gemas, passivas e equipamentos para seguir
           na campanha.
         </p>
+        <p className={styles.guia}>
+          Novo no Path of Exile 2? <Link to="/guia">Leia o guia rápido</Link> antes de começar.
+        </p>
 
         {/* Moldura no idioma dos tooltips de item do jogo; o separador divide o campo das sugestões. */}
         <div className={styles.tooltip}>
