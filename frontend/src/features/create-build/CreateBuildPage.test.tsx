@@ -2,9 +2,11 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { routes } from "../../app/routes";
+import { generateBuild } from "../../api/builds";
 import { getCatalogOptions, type CatalogOptions } from "../../api/catalog";
 
 vi.mock("../../api/catalog");
+vi.mock("../../api/builds");
 
 const OPTIONS: CatalogOptions = {
   patch: "0.4",
@@ -34,6 +36,7 @@ function optionsOf(label: string) {
 
 beforeEach(() => {
   vi.mocked(getCatalogOptions).mockResolvedValue(OPTIONS);
+  vi.mocked(generateBuild).mockReturnValue(new Promise(() => {}));
 });
 
 describe("CreateBuildPage", () => {
@@ -46,6 +49,7 @@ describe("CreateBuildPage", () => {
     expect(screen.getByText(/Conceito do personagem é obrigatório/)).toBeInTheDocument();
     expect(screen.getByLabelText("Conceito do personagem")).toHaveAttribute("aria-invalid", "true");
     expect(router.state.location.pathname).toBe("/criar");
+    expect(generateBuild).not.toHaveBeenCalled();
   });
 
   it("ascendências mostradas são só as da classe escolhida", async () => {
@@ -101,9 +105,10 @@ describe("CreateBuildPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Gerar Build com IA" }));
 
     expect(router.state.location.pathname).toBe("/gerando");
-    expect(router.state.location.state).toEqual({
-      request: { concept: "arqueiro mágico", characterClass: "Ranger", weaponType: "Bow" },
-    });
+    expect(generateBuild).toHaveBeenCalledWith(
+      { concept: "arqueiro mágico", characterClass: "Ranger", weaponType: "Bow" },
+      expect.any(Function),
+    );
   });
 
   it("traz o conceito digitado na tela inicial", async () => {
