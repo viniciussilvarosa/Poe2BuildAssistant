@@ -1,4 +1,6 @@
 .pagina {
+  position: relative;
+  isolation: isolate; /* a arte de fundo das telas (z-index: -1) fica atrás só desta página */
   min-height: 100vh;
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -64,6 +66,13 @@
 .menu .entrar {
   color: var(--osso);
   font-weight: 500;
+  padding-inline: 0.9rem;
+  border: 1px solid var(--ouro-velho);
+  border-radius: 2px;
+}
+
+.menu .entrar:hover {
+  border-color: var(--osso);
 }
 
 .conteudo {
@@ -71,7 +80,12 @@
 }
 
 .rodape {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 2rem;
   padding: 2rem var(--margem);
+  border-top: 1px solid var(--pedra-borda);
   color: var(--cinza-brasa);
   font-size: var(--texto-pequeno);
 }
