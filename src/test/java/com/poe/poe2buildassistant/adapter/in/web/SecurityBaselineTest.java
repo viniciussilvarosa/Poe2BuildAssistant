@@ -42,9 +42,10 @@ class SecurityBaselineTest {
     }
 
     @Test
-    @DisplayName("/api/admin/** fica negado até o card de administração")
+    @DisplayName("/api/admin/** exige ADMIN: visitante recebe 401")
     void adminNegado() throws Exception {
-        mvc.perform(get("/api/admin/catalog")).andExpect(status().isForbidden());
+        // Visitante: 401 (a API não redireciona ao Google). Logado sem ADMIN: 403 (MeControllerTest).
+        mvc.perform(get("/api/admin/catalog")).andExpect(status().isUnauthorized());
     }
 
     @Test
