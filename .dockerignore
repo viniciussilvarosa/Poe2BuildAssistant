@@ -1,0 +1,3 @@
+# Só o jar entra no contexto do build: nada de .env, código-fonte ou node_modules.
+*
+!target/Poe2BuildAssistant-*.jar
