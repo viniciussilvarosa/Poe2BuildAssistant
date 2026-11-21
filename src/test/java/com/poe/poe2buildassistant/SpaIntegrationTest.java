@@ -70,9 +70,27 @@ class SpaIntegrationTest {
         assertThat(r.body()).doesNotContain("<div id=\"root\">");
     }
 
+    @ParameterizedTest(name = "{0} abre o SPA com status 404")
+    @ValueSource(strings = {"/qualquer-coisa", "/builds", "/builds/a/b", "/rota/que/nao/existe"})
+    @DisplayName("URL desconhecida aberta direto mostra a página de não encontrado do SPA, não um 403 em branco (bug #48)")
+    void rotaDesconhecidaAbreSpaCom404(String path) throws Exception {
+        HttpResponse<String> r = get(path);
+
+        assertThat(r.statusCode()).isEqualTo(404);
+        assertThat(r.headers().firstValue("Content-Type")).hasValueSatisfying(ct -> assertThat(ct).startsWith("text/html"));
+        assertThat(r.body()).contains("<div id=\"root\">");
+        assertThat(r.headers().firstValue("Content-Security-Policy")).isPresent();
+    }
+
     @Test
-    @DisplayName("rota fora da lista do SPA continua negada")
-    void rotaForaDaListaNegada() throws Exception {
-        assertThat(get("/qualquer-coisa").statusCode()).isEqualTo(403);
+    @DisplayName("métodos que não são GET continuam negados fora da API")
+    void naoGetContinuaNegado() throws Exception {
+        HttpResponse<String> r = http.send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/qualquer-coisa"))
+                        .POST(HttpRequest.BodyPublishers.noBody())
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+        assertThat(r.statusCode()).isEqualTo(403);
     }
 }
