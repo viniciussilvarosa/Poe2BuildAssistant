@@ -24,6 +24,36 @@ type Selector = "characterClass" | "ascendancy" | "weaponType" | "mainSkill" | "
 type Choices = Record<Selector, string>;
 
 const EMPTY: Choices = { characterClass: "", ascendancy: "", weaponType: "", mainSkill: "", playstyle: "" };
+const SELECTORS = Object.keys(EMPTY) as Selector[];
+
+/** Só as chaves de seletor do pedido anterior: o conceito tem campo próprio (chaos K1). */
+function choicesFrom(request?: BuildRequest): Choices {
+  return Object.fromEntries(SELECTORS.map((k) => [k, request?.[k] ?? ""])) as Choices;
+}
+
+/**
+ * Descarta escolhas que não estão no catálogo carregado (patch novo, histórico antigo): o seletor
+ * mostraria "Deixar a IA escolher" e o valor iria escondido no pedido (chaos K2).
+ */
+function keepValid(choices: Choices, options?: CatalogOptions): Choices {
+  const has = (names: string[], value: string) => (names.includes(value) ? value : "");
+  const classes = options?.classes ?? [];
+  const characterClass = has(classes.map((c) => c.name), choices.characterClass);
+  const ascendancies = classes
+    .filter((c) => !characterClass || c.name === characterClass)
+    .flatMap((c) => c.ascendancies.map((a) => a.name));
+  const weaponType = has((options?.weaponTypes ?? []).map((w) => w.name), choices.weaponType);
+  const skills = (options?.skillGems ?? []).filter(
+    (g) => !weaponType || g.weaponTypes.length === 0 || g.weaponTypes.includes(weaponType),
+  );
+  return {
+    characterClass,
+    ascendancy: has(ascendancies, choices.ascendancy),
+    weaponType,
+    mainSkill: has(skills.map((g) => g.name), choices.mainSkill),
+    playstyle: has((options?.playstyles ?? []).map((p) => p.name), choices.playstyle),
+  };
+}
 
 export function CreateBuildPage() {
   const navigate = useNavigate();
@@ -31,8 +61,9 @@ export function CreateBuildPage() {
   const { request, error } = (useLocation().state ?? {}) as CreateBuildState;
   const conceptRef = useRef<HTMLTextAreaElement>(null);
 
-  const [concept, setConcept] = useState(request?.concept ?? params.get("conceito") ?? "");
-  const [choices, setChoices] = useState<Choices>(() => ({ ...EMPTY, ...request }));
+  // A URL é editável: corta no limite do backend, como a digitação já faz (chaos K4).
+  const [concept, setConcept] = useState((request?.concept ?? params.get("conceito") ?? "").slice(0, MAX_CONCEPT));
+  const [choices, setChoices] = useState<Choices>(() => choicesFrom(request));
   const [conceptMissing, setConceptMissing] = useState(false);
   const [options, setOptions] = useState<CatalogOptions>();
   const [optionsError, setOptionsError] = useState<string>();
@@ -40,8 +71,16 @@ export function CreateBuildPage() {
   useEffect(() => {
     let active = true;
     getCatalogOptions()
-      .then((o) => active && setOptions(o))
-      .catch((e: { detail?: string }) => active && setOptionsError(e.detail ?? "Não foi possível carregar as opções."));
+      .then((o) => {
+        if (!active) return;
+        setOptions(o);
+        setChoices((c) => keepValid(c, o));
+      })
+      .catch((e: { detail?: string }) => {
+        if (!active) return;
+        setOptionsError(e.detail ?? "Não foi possível carregar as opções.");
+        setChoices(EMPTY);
+      });
     return () => {
       active = false;
     };
@@ -82,7 +121,7 @@ export function CreateBuildPage() {
       return;
     }
     const filled = Object.fromEntries(Object.entries(choices).filter(([, v]) => v));
-    navigate("/gerando", { state: { request: { concept: trimmed, ...filled } } });
+    navigate("/gerando", { state: { request: { ...filled, concept: trimmed } } });
   }
 
   const selector = (id: Selector, label: string, names: string[]) => (
@@ -109,7 +148,7 @@ export function CreateBuildPage() {
       {error && (
         <div role="alert" className={styles.aviso}>
           <p>{error.detail}</p>
-          {error.retryAt && <p>Você pode gerar de novo a partir de {formatRetry(error.retryAt)}.</p>}
+          {formatRetry(error.retryAt) && <p>Você pode gerar de novo a partir de {formatRetry(error.retryAt)}.</p>}
           {error.status === 429 && (
             <p>
               Quem entra com a conta Google tem um limite diário maior.{" "}
@@ -173,7 +212,9 @@ export function CreateBuildPage() {
   );
 }
 
-/** retryAt vem em UTC; mostra no fuso do navegador. */
-function formatRetry(retryAt: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(retryAt));
+/** retryAt vem em UTC; mostra no fuso do navegador. Data inválida não derruba a tela (chaos K3). */
+function formatRetry(retryAt?: string) {
+  const date = retryAt ? new Date(retryAt) : undefined;
+  if (!date || Number.isNaN(date.getTime())) return undefined;
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(date);
 }
