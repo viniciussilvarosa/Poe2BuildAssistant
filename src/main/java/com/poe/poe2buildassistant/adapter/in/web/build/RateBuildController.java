@@ -6,6 +6,8 @@ import com.poe.poe2buildassistant.domain.feedback.BuildRating;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +27,16 @@ class RateBuildController {
     RateBuildController(RateBuildUseCase rateBuild, RequesterResolver requesters) {
         this.rateBuild = rateBuild;
         this.requesters = requesters;
+    }
+
+    record RatingView(BuildRating.Value value) {}
+
+    /** 204 quando este avaliador ainda não votou (ou a build não existe): nada a marcar na tela. */
+    @GetMapping("/api/builds/{id}/rating")
+    ResponseEntity<RatingView> current(@PathVariable UUID id, HttpServletRequest http) {
+        return rateBuild.currentRating(id, requesters.resolve(http))
+                .map(v -> ResponseEntity.ok(new RatingView(v)))
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @PostMapping("/api/builds/{id}/rating")

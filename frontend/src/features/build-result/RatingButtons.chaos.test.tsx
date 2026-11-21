@@ -1,10 +1,15 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { rateBuild } from "../../api/builds";
+import { getMyRating, rateBuild } from "../../api/builds";
 import { ApiError } from "../../api/client";
 import { RatingButtons } from "./RatingButtons";
 
 vi.mock("../../api/builds");
+// O voto atual é lido ao abrir a build (#50); nestes testes ninguém votou ainda.
+beforeEach(() => {
+  vi.mocked(getMyRating).mockResolvedValue(null);
+});
+
 
 /** Ataques aos botões 👍/👎 (card #16, PR #42). */
 

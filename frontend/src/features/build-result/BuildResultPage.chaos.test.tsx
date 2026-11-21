@@ -3,12 +3,17 @@ import userEvent from "@testing-library/user-event";
 import { act } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { routes } from "../../app/routes";
-import { getBuild, type BuildContent, type SavedBuild } from "../../api/builds";
+import { getMyRating, getBuild, type BuildContent, type SavedBuild } from "../../api/builds";
 import { ApiError } from "../../api/client";
 import { buildFixture } from "./fixtures";
 import { formatBuildSummary } from "./formatBuildSummary";
 
 vi.mock("../../api/builds");
+// O voto atual é lido ao abrir a build (#50); nestes testes ninguém votou ainda.
+beforeEach(() => {
+  vi.mocked(getMyRating).mockResolvedValue(null);
+});
+
 
 /** Ataques à tela Sua build sugerida (card #13, PR #33). */
 

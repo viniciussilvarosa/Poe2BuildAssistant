@@ -56,6 +56,15 @@ class RatingPersistenceAdapterTest {
     }
 
     @Test
+    @DisplayName("findValue devolve só o voto daquele avaliador naquela build")
+    void votoDoAvaliador() {
+        adapter.upsert(new BuildRating(build, "user:ana", BuildRating.Value.UP, NOW));
+
+        assertThat(adapter.findValue(build, "user:ana")).contains(BuildRating.Value.UP);
+        assertThat(adapter.findValue(build, "user:outro")).isEmpty();
+    }
+
+    @Test
     @DisplayName("calcula taxa positiva = UP / total")
     void taxaPositiva() {
         jdbc.sql("DELETE FROM build_rating").update();

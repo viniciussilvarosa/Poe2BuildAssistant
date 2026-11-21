@@ -7,6 +7,7 @@ import com.poe.poe2buildassistant.application.port.out.RatingRepositoryPort;
 import com.poe.poe2buildassistant.domain.feedback.BuildRating;
 import com.poe.poe2buildassistant.domain.quota.Requester;
 import com.poe.poe2buildassistant.domain.shared.BuildNotFound;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,5 +41,11 @@ public class RateBuildService implements RateBuildUseCase {
                 .addKeyValue("value", value)
                 .addKeyValue("requesterType", requester.type())
                 .log();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<BuildRating.Value> currentRating(UUID buildId, Requester requester) {
+        return ratings.findValue(buildId, requester.key());
     }
 }

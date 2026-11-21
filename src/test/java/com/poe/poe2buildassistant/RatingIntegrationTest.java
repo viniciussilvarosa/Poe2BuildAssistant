@@ -2,6 +2,7 @@ package com.poe.poe2buildassistant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -88,6 +89,32 @@ class RatingIntegrationTest {
         rate(build, "{\"value\":\"DOWN\"}").andExpect(status().isNoContent());
 
         assertThat(ratings()).singleElement().satisfies(r -> assertThat(r).endsWith("=DOWN"));
+    }
+
+    @Test
+    @DisplayName("GET devolve o voto do próprio avaliador para a tela marcar o botão (bug #50)")
+    void leVotoAtual() throws Exception {
+        rate(build, "{\"value\":\"DOWN\"}").andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/builds/" + build + "/rating").with(r -> {
+                    r.setRemoteAddr("203.0.113.9");
+                    return r;
+                }))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.value").value("DOWN"));
+    }
+
+    @Test
+    @DisplayName("GET sem voto, ou o voto de outro avaliador, responde 204 sem expor nada")
+    void semVotoProprio() throws Exception {
+        rate(build, "{\"value\":\"UP\"}").andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/builds/" + build + "/rating").with(r -> {
+                    r.setRemoteAddr("198.51.100.77");
+                    return r;
+                }))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/builds/" + UUID.randomUUID() + "/rating")).andExpect(status().isNoContent());
     }
 
     @Test
