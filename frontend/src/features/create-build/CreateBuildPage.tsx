@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 import type { BuildRequest } from "../../api/builds";
 import { getCatalogOptions, type CatalogOptions } from "../../api/catalog";
@@ -7,6 +7,10 @@ import styles from "./CreateBuildPage.module.css";
 
 const AI_CHOOSES = "Deixar a IA escolher";
 const MAX_CONCEPT = 500;
+/** O catálogo não distingue a mão: escudo e broquel vão num grupo próprio (QA-10). */
+const OFF_HAND = new Set(["Shield", "Buckler"]);
+
+type Group = { label?: string; names: string[] };
 
 /** Erro trazido da tela de progresso (objeto simples: o histórico do navegador não clona Error). */
 export interface GenerationError {
@@ -67,6 +71,7 @@ export function CreateBuildPage() {
   const [conceptMissing, setConceptMissing] = useState(false);
   const [options, setOptions] = useState<CatalogOptions>();
   const [optionsError, setOptionsError] = useState<string>();
+  const [skillQuery, setSkillQuery] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -93,6 +98,17 @@ export function CreateBuildPage() {
   const skills = (options?.skillGems ?? []).filter(
     (g) => !choices.weaponType || g.weaponTypes.length === 0 || g.weaponTypes.includes(choices.weaponType),
   );
+
+  const weaponNames = (options?.weaponTypes ?? []).map((w) => w.name);
+  const weaponGroups: Group[] = [
+    { label: "Armas", names: weaponNames.filter((n) => !OFF_HAND.has(n)) },
+    { label: "Mão secundária", names: weaponNames.filter((n) => OFF_HAND.has(n)) },
+  ].filter((g) => g.names.length > 0);
+  // A busca só esconde opções: a escolha atual continua na lista, senão o select mentiria.
+  const query = skillQuery.trim().toLowerCase();
+  const skillNames = skills
+    .map((g) => g.name)
+    .filter((n) => !query || n.toLowerCase().includes(query) || n === choices.mainSkill);
 
   function choose(selector: Selector, value: string) {
     setChoices((current) => {
@@ -124,18 +140,42 @@ export function CreateBuildPage() {
     navigate("/gerando", { state: { request: { ...filled, concept: trimmed } } });
   }
 
-  const selector = (id: Selector, label: string, names: string[]) => (
+  const optionList = (names: string[]) =>
+    names.map((name) => (
+      <option key={name} value={name}>
+        {name}
+      </option>
+    ));
+
+  const selector = (id: Selector, label: string, groups: Group[], before?: ReactNode) => (
     <div className={styles.seletor}>
       <label htmlFor={id}>{label}</label>
+      {before}
       <select id={id} value={choices[id]} onChange={(e) => choose(id, e.target.value)}>
         <option value="">{AI_CHOOSES}</option>
-        {names.map((name) => (
-          <option key={name} value={name}>
-            {name}
-          </option>
-        ))}
+        {groups.map((g) =>
+          g.label ? (
+            <optgroup key={g.label} label={g.label}>
+              {optionList(g.names)}
+            </optgroup>
+          ) : (
+            optionList(g.names)
+          ),
+        )}
       </select>
     </div>
+  );
+
+  const skillSearch = (
+    <input
+      type="search"
+      className={styles.busca}
+      aria-label="Buscar habilidade"
+      aria-controls="mainSkill"
+      placeholder="Buscar habilidade"
+      value={skillQuery}
+      onChange={(e) => setSkillQuery(e.target.value)}
+    />
   );
 
   return (
@@ -192,11 +232,11 @@ export function CreateBuildPage() {
 
         <fieldset className={styles.escolhas}>
           <legend>Escolhas opcionais</legend>
-          {selector("characterClass", "Classe", classes.map((c) => c.name))}
-          {selector("ascendancy", "Ascendência", ascendancies.map((a) => a.name))}
-          {selector("weaponType", "Arma", (options?.weaponTypes ?? []).map((w) => w.name))}
-          {selector("mainSkill", "Habilidade principal", skills.map((g) => g.name))}
-          {selector("playstyle", "Estilo de jogo", (options?.playstyles ?? []).map((p) => p.name))}
+          {selector("characterClass", "Classe", [{ names: classes.map((c) => c.name) }])}
+          {selector("ascendancy", "Ascendência", [{ names: ascendancies.map((a) => a.name) }])}
+          {selector("weaponType", "Arma", weaponGroups)}
+          {selector("mainSkill", "Habilidade principal", [{ names: skillNames }], skillSearch)}
+          {selector("playstyle", "Estilo de jogo", [{ names: (options?.playstyles ?? []).map((p) => p.name) }])}
         </fieldset>
 
         <div className={moldura.separador} aria-hidden="true" />
