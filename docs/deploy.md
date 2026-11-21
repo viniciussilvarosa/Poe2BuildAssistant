@@ -25,6 +25,8 @@ Para exigir o CI verde antes do merge: *Settings → Branches → Branch protect
 | Segredos | Secret Manager: `GEMINI_API_KEY`, `GOOGLE_CLIENT_SECRET`, `QUOTA_IP_SALT`, `DB_PASSWORD` |
 | Identidade do app | Conta de serviço `poe2-run@poe2buildassistant.iam.gserviceaccount.com` (só lê os segredos acima) |
 
+Variável `APP_PUBLIC_URL` = o endereço oficial acima: o Cloud Run também publica o serviço em `https://poe2buildassistant-qo5it56ita-uc.a.run.app`, e o app redireciona esse endereço para o oficial, onde o login com Google funciona.
+
 Configuração do serviço: 1 GiB e 1 vCPU, timeout de 300 s (cobre o stream de 150 s da geração), de 0 a **1** instância: a sessão de login fica na memória do processo (sem sessão compartilhada), então uma segunda instância faria o usuário perder o login ou a volta do Google cair em outra instância. Para escalar além de 1, primeiro mover a sessão para o banco (Spring Session JDBC). Com 0 instâncias, a primeira requisição depois de um tempo parado espera a subida do Java (~15 s).
 
 **Banco (Neon):** o app usa a conexão com pooling (`DB_URL`, host `…-pooler…`); o Flyway usa a conexão direta (`SPRING_FLYWAY_URL`, o mesmo host sem `-pooler`), como recomenda o Neon para migrations. Os dois usam o usuário de `DB_USERNAME`/`SPRING_FLYWAY_USER` e a senha do segredo `DB_PASSWORD`. O Neon hiberna o banco depois de alguns minutos sem uso; a primeira consulta seguinte leva cerca de 1 s a mais.
@@ -54,6 +56,7 @@ docker run -d --name poe2 -p 8080:8080 \
   -e GOOGLE_CLIENT_ID=<id> -e GOOGLE_CLIENT_SECRET=<segredo> \
   -e ADMIN_EMAILS=<email1,email2> \
   -e QUOTA_IP_SALT=<texto aleatório longo e fixo> \
+  -e APP_PUBLIC_URL=https://<endereço oficial> \
   ghcr.io/viniciussilvarosa/poe2buildassistant:sha-<commit>
 ```
 
