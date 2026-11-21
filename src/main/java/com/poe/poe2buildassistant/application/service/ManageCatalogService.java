@@ -36,6 +36,9 @@ public class ManageCatalogService implements ManageCatalogUseCase {
     @Transactional
     public CatalogVersion createDraft(String patch, String adminUserId) {
         String name = check(() -> CatalogNames.requireName(patch, "versão do catálogo"));
+        if (name.length() > CatalogVersion.MAX_PATCH_LENGTH) {
+            throw new InvalidCatalogChange("o nome da versão passa de " + CatalogVersion.MAX_PATCH_LENGTH + " caracteres");
+        }
         catalogs.findDraft().ifPresent(d -> {
             throw new DraftAlreadyExists(d.patch());
         });
