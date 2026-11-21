@@ -16,7 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/catalog")
 class CatalogOptionsController {
 
-    /** O catálogo só muda quando o admin publica um patch novo. */
+    /**
+     * O catálogo só muda quando o admin publica um patch novo. Cache só no navegador: a resposta
+     * leva o Set-Cookie do CSRF, que um proxy com "public" repassaria a todos (chaos O2).
+     */
     private static final Duration MAX_AGE = Duration.ofMinutes(5);
     private static final Logger log = LoggerFactory.getLogger(CatalogOptionsController.class);
 
@@ -30,7 +33,7 @@ class CatalogOptionsController {
     ResponseEntity<CatalogOptionsResponse> options() {
         try {
             return ResponseEntity.ok()
-                    .cacheControl(CacheControl.maxAge(MAX_AGE).cachePublic())
+                    .cacheControl(CacheControl.maxAge(MAX_AGE).cachePrivate())
                     .body(CatalogOptionsResponse.from(getOptions.get()));
         } catch (CatalogNotPublished e) {
             // O ApiExceptionHandler transforma em 503 ProblemDetail em pt-BR.

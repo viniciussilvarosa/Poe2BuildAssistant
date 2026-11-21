@@ -22,6 +22,18 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(problem.getStatus()).body(problem);
     }
 
+    /**
+     * Qualquer outra falha (banco fora, bug) vira 500 em pt-BR. Sem isto, ela subia para o
+     * despacho de /error, que o SecurityConfig nega, e o cliente recebia um 403 vazio (chaos O8).
+     * As exceções do Spring MVC (405, 404, corpo inválido...) continuam nos handlers da classe-mãe,
+     * que são mais específicos.
+     */
+    @ExceptionHandler(Exception.class)
+    ResponseEntity<ProblemDetail> unexpected(Exception e) {
+        ProblemDetail problem = ApiProblems.from(e);
+        return ResponseEntity.status(problem.getStatus()).body(problem);
+    }
+
     /** JSON vazio, malformado ou com tipos errados: mensagem em pt-BR, como o resto da API (chaos X3). */
     @Override
     protected ResponseEntity<Object> handleHttpMessageNotReadable(

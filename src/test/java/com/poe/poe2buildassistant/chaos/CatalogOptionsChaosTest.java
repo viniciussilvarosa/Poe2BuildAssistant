@@ -109,10 +109,14 @@ class CatalogOptionsChaosTest {
 
             HttpResponse<String> r = get();
 
-            assertThat(r.headers().firstValue("Cache-Control")).hasValueSatisfying(v -> assertThat(v).contains("max-age=300"));
-            assertThat(r.headers().allValues("Set-Cookie"))
-                    .as("um proxy que guarde esta resposta entregaria o mesmo cookie (sessão/CSRF) a todos")
-                    .isEmpty();
+            String cacheControl = r.headers().firstValue("Cache-Control").orElse("");
+            assertThat(cacheControl).contains("max-age=300");
+            if (!r.headers().allValues("Set-Cookie").isEmpty()) {
+                assertThat(cacheControl)
+                        .as("um proxy que guarde esta resposta entregaria o mesmo cookie (sessão/CSRF) a todos")
+                        .doesNotContain("public")
+                        .contains("private");
+            }
         }
 
         @Test
