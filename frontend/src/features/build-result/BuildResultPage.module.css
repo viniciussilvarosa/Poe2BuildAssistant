@@ -1,0 +1,163 @@
+.pagina {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 64rem;
+  padding-block: 2.5rem 4rem;
+}
+
+.apoio {
+  color: var(--cinza-brasa);
+  max-width: var(--medida);
+}
+
+/* Cabeçalho como o nome de um item: a habilidade principal é o título da build. */
+.cabecalho {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.cabecalho h1 {
+  font-size: var(--titulo-1);
+}
+
+.identidade {
+  font-size: var(--texto-medio);
+}
+
+.identidade span {
+  margin-inline: 0.35rem;
+  color: var(--ouro-velho);
+  font-size: 0.6em;
+  vertical-align: middle;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 46rem) minmax(14rem, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.secoes {
+  gap: 1.5rem;
+}
+
+.secoes section {
+  display: grid;
+  gap: 0.6rem;
+  max-width: var(--medida);
+}
+
+/* Ouro de orbe fica só no "Copiar Resumo": os títulos usam o osso, como o resto do texto. */
+.secoes h2 {
+  font-size: var(--texto-medio);
+}
+
+.rotulo {
+  margin-top: 0.4rem;
+  color: var(--cinza-brasa);
+  font-size: var(--texto-pequeno);
+}
+
+.gemaPrincipal {
+  font-weight: 700;
+  font-size: var(--texto-medio);
+}
+
+.lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Nomes de jogo em plaquinhas finas, como os rótulos de gema no jogo. */
+.lista li {
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--pedra-borda);
+  border-radius: 2px;
+  background: var(--pedra);
+}
+
+.escolhas,
+.slots {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.4rem 0 0;
+}
+
+.escolhas div,
+.slots div {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 1rem;
+}
+
+.escolhas dt,
+.slots dt {
+  color: var(--cinza-brasa);
+}
+
+.escolhas dd,
+.slots dd {
+  margin: 0;
+}
+
+.dicas {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.lateral {
+  position: sticky;
+  top: 1.5rem;
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+}
+
+.copiar {
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.copiar button {
+  justify-self: start;
+}
+
+.feedback {
+  min-height: 1.5em;
+  color: var(--cinza-brasa);
+  font-size: var(--texto-pequeno);
+}
+
+.copiar textarea {
+  width: 100%;
+  font: inherit;
+  font-size: var(--texto-pequeno);
+  color: var(--osso);
+  background: var(--pedra);
+  border: 1px solid var(--pedra-borda);
+}
+
+@media (max-width: 56rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lateral {
+    position: static;
+    grid-row: 1;
+  }
+
+  .escolhas div,
+  .slots div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+}
