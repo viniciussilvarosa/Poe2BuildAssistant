@@ -177,4 +177,35 @@ class CatalogPersistenceAdapterTest {
     void statusInvalido() {
         assertThatThrownBy(() -> version("0.4", "LIVE")).isInstanceOf(DataIntegrityViolationException.class);
     }
+
+    @Test
+    @DisplayName("replaceNotables troca os notables só da versão informada")
+    void substituiNotables() {
+        long draft = version("0.6", "DRAFT");
+        long outra = version("0.4", "PUBLISHED");
+        jdbc.sql("INSERT INTO passive_notable (catalog_version_id, name) VALUES (?, 'Antigo'), (?, 'De Outra Versão')")
+                .params(draft, outra)
+                .update();
+
+        adapter.replaceNotables(draft, List.of(new PassiveNotable("Her Final Bite", "Bow Attacks have Culling Strike")));
+
+        assertThat(jdbc.sql("SELECT name || ':' || description FROM passive_notable WHERE catalog_version_id = ?")
+                        .param(draft)
+                        .query(String.class)
+                        .list())
+                .containsExactly("Her Final Bite:Bow Attacks have Culling Strike");
+        assertThat(adapter.loadPublished().notables()).extracting(PassiveNotable::name).containsExactly("De Outra Versão");
+    }
+
+    @Test
+    @DisplayName("findVersion devolve patch e status; id inexistente devolve vazio")
+    void achaVersao() {
+        long draft = version("0.6", "DRAFT");
+
+        assertThat(adapter.findVersion(draft)).hasValueSatisfying(v -> {
+            assertThat(v.patch()).isEqualTo("0.6");
+            assertThat(v.status()).isEqualTo(com.poe.poe2buildassistant.domain.catalog.CatalogVersion.Status.DRAFT);
+        });
+        assertThat(adapter.findVersion(-1)).isEmpty();
+    }
 }

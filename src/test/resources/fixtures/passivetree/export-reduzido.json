@@ -1,0 +1,17 @@
+{
+  "tree": "Default",
+  "classes": [{ "name": "Ranger" }],
+  "nodes": {
+    "root": { "group": 0, "orbit": 0, "out": [], "in": [] },
+    "100": { "skill": 100, "name": "Her Final Bite", "isNotable": true, "stats": ["20% increased Physical Damage with Bows", "[Bow|Bow] [Attack|Attacks] have [CullingStrike|Culling Strike]"], "group": 1 },
+    "101": { "skill": 101, "name": "Cold Precision", "isNotable": true, "stats": ["25% increased [Cold] Damage"], "group": 1 },
+    "102": { "skill": 102, "name": "Swift Flight", "isNotable": true, "stats": ["8% increased Movement Speed"], "group": 2 },
+    "103": { "skill": 103, "name": "Iron Reflexes", "isKeystone": true, "stats": ["Converts all Evasion Rating to Armour"], "group": 3 },
+    "104": { "skill": 104, "name": "Dexterity", "stats": ["+8 to Dexterity"], "group": 1 },
+    "105": { "skill": 105, "name": "Projectile Damage", "stats": ["10% increased Projectile Damage"], "group": 1 },
+    "106": { "skill": 106, "name": "Strength", "stats": ["+8 to Strength"], "group": 2 },
+    "107": { "skill": 107, "name": "Life", "stats": ["+10 to maximum Life"], "group": 2 },
+    "108": { "skill": 108, "name": "Mana", "stats": ["+10 to maximum Mana"], "group": 3 },
+    "109": { "skill": 109, "name": "Endless Munitions", "isNotable": true, "ascendancyId": "Ranger1", "stats": ["Skills fire an additional Projectile"], "group": 9 }
+  }
+}
