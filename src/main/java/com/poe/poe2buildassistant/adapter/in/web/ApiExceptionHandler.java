@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
@@ -38,8 +39,13 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleHttpMessageNotReadable(
             HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        // A dica do campo concept só faz sentido no formulário de build; o admin recebe a genérica (chaos C6).
+        boolean buildForm = request instanceof ServletWebRequest web && web.getRequest().getRequestURI().startsWith("/api/builds");
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST, "O corpo da requisição é inválido. Envie um JSON com o campo concept.");
+                HttpStatus.BAD_REQUEST,
+                buildForm
+                        ? "O corpo da requisição é inválido. Envie um JSON com o campo concept."
+                        : "O corpo da requisição não é um JSON válido para esta operação.");
         problem.setTitle("Requisição inválida");
         return ResponseEntity.badRequest().body(problem);
     }
