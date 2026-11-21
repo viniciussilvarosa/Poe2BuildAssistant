@@ -31,6 +31,7 @@ export function Layout() {
       </main>
       <footer className={styles.rodape}>
         <p>Projeto independente não afiliado à Grinding Gear Games.</p>
+        <p>Arte: Path of Exile 2 © Grinding Gear Games.</p>
       </footer>
     </div>
   );

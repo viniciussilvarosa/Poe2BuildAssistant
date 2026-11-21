@@ -1,16 +1,19 @@
 /*
- * Tokens do Mentor de Builds (aprovados na #2). Toda tela parte daqui.
- * Ouro de orbe é exclusivo da ação principal; as cores de gema só codificam informação
- * (atributo de gemas e regiões da árvore), nunca decoração.
+ * Tokens do Mentor de Builds (aprovados na #2; revistos com a arte oficial do PoE 2). Toda tela
+ * parte daqui. A ardósia vem das sombras da arte de fundo, para a imagem se fundir à página.
+ * Ouro de orbe é exclusivo da ação principal; o ouro envelhecido desenha as molduras no idioma
+ * dos tooltips de item do jogo; as cores de gema só codificam informação, nunca decoração.
  */
 :root {
-  --ardosia: #1e2229;
-  --pedra: #2a3039;
-  --pedra-borda: #3a414c;
+  --ardosia: #12161e;
+  --pedra: #1c222c;
+  --pedra-borda: #343c48;
   --osso: #e9e3d7;
-  --cinza-brasa: #9aa1ab;
+  --cinza-brasa: #a3aab5;
   --ouro-orbe: #e8b64c;
   --ouro-orbe-forte: #f2c768;
+  --ouro-velho: #8a6d3b;
+  --vidro: rgb(18 22 30 / 72%);
 
   --gema-forca: #c8553d;
   --gema-destreza: #6aa84f;
