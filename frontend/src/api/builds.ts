@@ -1,4 +1,4 @@
-import { ApiError, apiGet, csrfToken, GENERIC_ERROR, toApiError } from "./client";
+import { ApiError, apiGet, apiSend, csrfToken, GENERIC_ERROR, toApiError } from "./client";
 
 /** Corpo do POST /api/builds/generate. Seletor ausente = "Deixar a IA escolher". */
 export interface BuildRequest {
@@ -145,4 +145,11 @@ function parseBlock(block: string): SseMessage | undefined {
     }
   }
   return data.length ? { event, data: data.join("\n") } : undefined;
+}
+
+export type Rating = "UP" | "DOWN";
+
+/** 👍/👎 da build (card #16). Votar de novo substitui o voto anterior. */
+export function rateBuild(id: string, value: Rating): Promise<void> {
+  return apiSend<void>("POST", `/api/builds/${encodeURIComponent(id)}/rating`, { value });
 }

@@ -1,6 +1,7 @@
 package com.poe.poe2buildassistant.adapter.in.web;
 
 import com.poe.poe2buildassistant.domain.shared.DomainException;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -35,12 +36,25 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(problem.getStatus()).body(problem);
     }
 
+    /**
+     * Parâmetro de URL no formato errado (ex.: id de build que não é UUID): 400 em pt-BR, sem
+     * repetir a entrada nem o tipo Java que o Spring descreveria em inglês (chaos R3).
+     */
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(
+            TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "O endereço não identifica um recurso válido. Confira o link.");
+        problem.setTitle("Requisição inválida");
+        return ResponseEntity.badRequest().body(problem);
+    }
+
     /** JSON vazio, malformado ou com tipos errados: mensagem em pt-BR, como o resto da API (chaos X3). */
     @Override
     protected ResponseEntity<Object> handleHttpMessageNotReadable(
             HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         // A dica do campo concept só faz sentido no formulário de build; o admin recebe a genérica (chaos C6).
-        boolean buildForm = request instanceof ServletWebRequest web && web.getRequest().getRequestURI().startsWith("/api/builds");
+        boolean buildForm = request instanceof ServletWebRequest web && web.getRequest().getRequestURI().startsWith("/api/builds/generate");
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 buildForm

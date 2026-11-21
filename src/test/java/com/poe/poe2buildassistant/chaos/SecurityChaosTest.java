@@ -17,6 +17,7 @@ import com.poe.poe2buildassistant.application.port.in.ImportPassiveTreeUseCase;
 import com.poe.poe2buildassistant.application.port.in.ListMyBuildsUseCase;
 import com.poe.poe2buildassistant.application.port.in.ManageCatalogUseCase;
 import com.poe.poe2buildassistant.application.port.in.PublishCatalogVersionUseCase;
+import com.poe.poe2buildassistant.application.port.in.RateBuildUseCase;
 import com.poe.poe2buildassistant.config.SecurityConfig;
 import jakarta.servlet.http.Cookie;
 import java.util.concurrent.Executor;
@@ -61,6 +62,7 @@ class SecurityChaosTest {
     @MockitoBean private GetBuildUseCase getBuild;
     @MockitoBean private GetCatalogOptionsUseCase getCatalogOptions;
     @MockitoBean private ListMyBuildsUseCase listMyBuilds;
+    @MockitoBean private RateBuildUseCase rateBuild;
     @MockitoBean private ManageCatalogUseCase manageCatalog;
     @MockitoBean private PublishCatalogVersionUseCase publishCatalog;
     @MockitoBean private ImportPassiveTreeUseCase importPassiveTree;

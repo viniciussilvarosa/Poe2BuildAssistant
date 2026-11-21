@@ -6,6 +6,7 @@ import moldura from "../../ui/Moldura.module.css";
 import { GearSection, GemsSection, PassivesSection, SummarySection, TipsSection } from "./BuildSections";
 import styles from "./BuildResultPage.module.css";
 import { formatBuildSummary } from "./formatBuildSummary";
+import { RatingButtons } from "./RatingButtons";
 
 type Load = { status: "loading" } | { status: "ready"; build: SavedBuild } | { status: "missing" } | { status: "failed"; detail: string };
 
@@ -88,6 +89,7 @@ function BuildResult({ id }: { id: string }) {
 
         <aside className={styles.lateral}>
           <CopySummary text={formatBuildSummary(load.build)} />
+          <RatingButtons buildId={load.build.id} />
           <Link to="/criar">Criar nova build</Link>
         </aside>
       </div>
