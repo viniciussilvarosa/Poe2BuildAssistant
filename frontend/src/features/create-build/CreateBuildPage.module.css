@@ -74,8 +74,11 @@
   font-size: var(--texto-pequeno);
 }
 
+/* align-content: start — o select não estica quando a célula vizinha é mais alta, como a de
+   "Habilidade principal", que tem a busca (#62). */
 .seletor {
   display: grid;
+  align-content: start;
   gap: 0.3rem;
 }
 
