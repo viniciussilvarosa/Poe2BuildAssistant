@@ -8,6 +8,7 @@ import com.google.genai.errors.ApiException;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
@@ -55,6 +56,7 @@ class GeminiClientTest {
                 .satisfies(e -> assertThat(((ApiException) e).code()).isEqualTo(429));
 
         assertThat(hits).hasValue(1);
-        assertThat(System.nanoTime() - start).isLessThan(2_000_000_000L);
+        // Folga para runner lento (no CI, 2,02 s): o retry do SDK levaria no mínimo 1 + 2 + 4 + 8 = 15 s.
+        assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(10));
     }
 }
