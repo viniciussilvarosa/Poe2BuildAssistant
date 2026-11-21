@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from "react-router";
 import { AuthMenu } from "../components/AuthMenu";
 import styles from "./Layout.module.css";
+import { LoginFailedNotice } from "./LoginFailedNotice";
 import { SessionProvider, useSession } from "./session";
 
 export function Layout() {
@@ -37,6 +38,7 @@ function Page() {
         </nav>
       </header>
       <main id="conteudo" className={styles.conteudo}>
+        <LoginFailedNotice />
         <Outlet />
       </main>
       <footer className={styles.rodape}>
