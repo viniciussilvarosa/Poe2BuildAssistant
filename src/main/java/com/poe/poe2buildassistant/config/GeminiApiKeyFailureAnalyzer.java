@@ -9,7 +9,7 @@ import org.springframework.boot.diagnostics.FailureAnalysis;
  */
 class GeminiApiKeyFailureAnalyzer extends AbstractFailureAnalyzer<IllegalStateException> {
 
-    private static final String SPRING_AI_MESSAGE = "Incomplete Google GenAI configuration";
+    static final String SPRING_AI_MESSAGE = "Incomplete Google GenAI configuration";
 
     @Override
     protected FailureAnalysis analyze(Throwable rootFailure, IllegalStateException cause) {

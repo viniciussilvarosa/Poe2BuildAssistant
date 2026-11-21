@@ -63,6 +63,8 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
             new BeanOutputConverter<>(GeneratedBuildResponse.class);
     private final String systemPrompt;
     private final PromptTemplate userTemplate;
+    /** Até quando o provedor mandou esperar (429 com retryDelay): antes disso nem chama (#64). */
+    private volatile Instant blockedUntil = Instant.MIN;
 
     GeminiBuildGeneratorAdapter(ChatClient.Builder builder, ClockPort clock, AiProperties properties) {
         this.client = builder.build();
@@ -74,6 +76,11 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
 
     @Override
     public GeneratedBuildDraft generate(BuildRequest request, CatalogSlice slice, List<BuildViolation> feedback) {
+        Instant until = blockedUntil;
+        if (clock.now().isBefore(until)) {
+            log.atInfo().setMessage("ai.provider.short_circuit").addKeyValue("retryAt", until).log();
+            throw new ProviderUnavailable(Optional.of(until));
+        }
         Prompt prompt = new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userPrompt(request, slice, feedback))));
         long start = System.nanoTime();
         ChatResponse response = call(prompt);
@@ -130,6 +137,7 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
                             .addKeyValue("status", api.code())
                             .addKeyValue("retryAt", retryAt.orElse(null))
                             .log();
+                    retryAt.ifPresent(at -> blockedUntil = at);
                     return new ProviderUnavailable(retryAt);
                 }
             }
