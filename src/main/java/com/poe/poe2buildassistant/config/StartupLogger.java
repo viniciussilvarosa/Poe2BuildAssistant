@@ -10,7 +10,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-/** Registra o evento {@code app.started} com perfis ativos e versão. Nunca loga segredos. */
+/** Registra o evento {@code app.started} com perfis ativos, versão e modelo de IA. Nunca loga segredos. */
 @Component
 class StartupLogger {
 
@@ -32,6 +32,8 @@ class StartupLogger {
                 .setMessage("app.started")
                 .addKeyValue("profiles", Arrays.toString(environment.getActiveProfiles()))
                 .addKeyValue("version", version)
+                // Qual modelo do Gemini está em uso: diagnóstico rápido de erros 404/503 do provedor.
+                .addKeyValue("aiModel", environment.getProperty("spring.ai.google.genai.chat.options.model", "padrão do Spring AI"))
                 .log();
     }
 }

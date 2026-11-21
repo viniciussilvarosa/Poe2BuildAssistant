@@ -3,6 +3,7 @@ package com.poe.poe2buildassistant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.flywaydb.core.Flyway;
+import org.springframework.ai.chat.model.ChatModel;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,14 @@ import org.springframework.test.context.ActiveProfiles;
 class ApplicationContextTest {
 
     @Autowired private Flyway flyway;
+    @Autowired private ChatModel chatModel;
+
+    @Test
+    @DisplayName("o modelo do Gemini é fixado na configuração, não herdado do Spring AI (bug #43)")
+    void modeloFixado() {
+        // O padrão do Spring AI 2.0.1, gemini-2.5-flash, foi descontinuado para chaves novas (404).
+        assertThat(chatModel.getDefaultOptions().getModel()).isEqualTo("gemini-3.6-flash");
+    }
 
     @Test
     @DisplayName("contexto sobe com perfil test e PostgreSQL, sem migrations pendentes ou com erro")
