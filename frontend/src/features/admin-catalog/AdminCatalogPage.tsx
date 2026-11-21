@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import * as admin from "../../api/adminCatalog";
 import type { CatalogVersionInfo, DraftCatalog, ItemType } from "../../api/adminCatalog";
 import { getCatalogOptions } from "../../api/catalog";
-import { getMe, type Me } from "../../api/me";
+import { useSession } from "../../app/session";
 import moldura from "../../ui/Moldura.module.css";
 import styles from "./AdminCatalogPage.module.css";
 
@@ -44,10 +44,7 @@ const message = (e: unknown) => (e as { detail?: string }).detail ?? "Não foi p
 
 /** Esconder a tela é só conforto: quem protege de verdade é o ROLE_ADMIN na API. */
 export function AdminCatalogPage() {
-  const [me, setMe] = useState<Me | null>();
-  useEffect(() => {
-    getMe().then(setMe);
-  }, []);
+  const { me } = useSession();
 
   if (me === undefined) return <p className={styles.pagina}>Carregando…</p>;
   if (me?.role !== "ADMIN") {

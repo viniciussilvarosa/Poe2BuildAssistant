@@ -148,7 +148,7 @@ describe("CreateBuildPage", () => {
     const alerta = screen.getByRole("alert");
     expect(alerta).toHaveTextContent("Você atingiu o limite diário de builds.");
     expect(alerta).toHaveTextContent(horario);
-    expect(screen.getByRole("link", { name: "Entrar com Google" })).toHaveAttribute("href", "/oauth2/authorization/google");
+    expect(within(screen.getByRole("alert")).getByRole("link", { name: "Entrar com Google" })).toHaveAttribute("href", "/oauth2/authorization/google");
     await screen.findByRole("option", { name: "Ranger" });
     expect(screen.getByLabelText("Classe")).toHaveValue("Ranger");
   });
