@@ -32,7 +32,7 @@ class GgSkillTreeExportAdapterChaosTest {
         try {
             String url = "http://127.0.0.1:" + mudo.getAddress().getPort() + "/data.json";
             // Configuração padrão de produção: só a URL muda.
-            GgSkillTreeExportAdapter adapter = new GgSkillTreeExportAdapter(new PassiveTreeProperties(url));
+            GgSkillTreeExportAdapter adapter = new GgSkillTreeExportAdapter(PassiveTreeProperties.withDefaultTimeouts(url));
 
             assertTimeoutPreemptively(Duration.ofSeconds(35), () ->
                     assertThatThrownBy(adapter::fetchNotables).isInstanceOf(PassiveTreeUnavailable.class));

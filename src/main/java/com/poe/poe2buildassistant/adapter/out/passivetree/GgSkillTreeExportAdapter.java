@@ -5,12 +5,14 @@ import com.poe.poe2buildassistant.domain.catalog.CatalogNames;
 import com.poe.poe2buildassistant.domain.catalog.PassiveNotable;
 import com.poe.poe2buildassistant.domain.shared.PassiveTreeFormatChanged;
 import com.poe.poe2buildassistant.domain.shared.PassiveTreeUnavailable;
+import java.net.http.HttpClient;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -36,12 +38,22 @@ class GgSkillTreeExportAdapter implements PassiveTreeSourcePort {
 
     @Autowired
     GgSkillTreeExportAdapter(PassiveTreeProperties properties) {
-        this(properties.url(), RestClient.create());
+        this(properties.url(), RestClient.builder().requestFactory(requestFactory(properties)).build());
     }
 
     GgSkillTreeExportAdapter(String url, RestClient http) {
         this.url = url;
         this.http = http;
+    }
+
+    private static JdkClientHttpRequestFactory requestFactory(PassiveTreeProperties properties) {
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(properties.connectTimeout())
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .build();
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(client);
+        factory.setReadTimeout(properties.readTimeout());
+        return factory;
     }
 
     @Override

@@ -16,6 +16,8 @@ import com.poe.poe2buildassistant.domain.catalog.SkillGem;
 import com.poe.poe2buildassistant.domain.catalog.SupportGem;
 import com.poe.poe2buildassistant.domain.catalog.WeaponType;
 import com.poe.poe2buildassistant.domain.shared.CatalogNotPublished;
+import com.poe.poe2buildassistant.domain.shared.CatalogVersionNotEditable;
+import com.poe.poe2buildassistant.domain.shared.CatalogVersionNotFound;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,10 +119,24 @@ class CatalogPersistenceAdapter implements CatalogRepositoryPort, CatalogEditorP
         return versions.findById(versionId).map(v -> new CatalogVersion(v.getId(), v.getPatch(), v.getStatus()));
     }
 
-    /** Escrita direta em SQL: as entidades do catálogo são só de leitura. */
+    /**
+     * Escrita direta em SQL: as entidades do catálogo são só de leitura. O {@code FOR UPDATE} trava a
+     * versão até o fim da transação: uma publicação concorrente espera, e uma publicação que veio
+     * antes é vista aqui (chaos N2).
+     */
     @Override
     @Transactional
     public void replaceNotables(long versionId, List<PassiveNotable> replacement) {
+        Map<String, Object> version = jdbc.sql("SELECT patch, status FROM catalog_version WHERE id = ? FOR UPDATE")
+                .param(versionId)
+                .query()
+                .listOfRows()
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new CatalogVersionNotFound(versionId));
+        if (CatalogVersion.Status.PUBLISHED.name().equals(version.get("status"))) {
+            throw new CatalogVersionNotEditable((String) version.get("patch"));
+        }
         jdbc.sql("DELETE FROM passive_notable WHERE catalog_version_id = ?").param(versionId).update();
         for (PassiveNotable n : replacement) {
             jdbc.sql("INSERT INTO passive_notable (catalog_version_id, name, description) VALUES (?, ?, ?)")
