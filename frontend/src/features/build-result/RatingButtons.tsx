@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { rateBuild, type Rating } from "../../api/builds";
+import { useEffect, useRef, useState } from "react";
+import { getMyRating, rateBuild, type Rating } from "../../api/builds";
 import styles from "./BuildResultPage.module.css";
 
 const OPTIONS: { value: Rating; label: string }[] = [
@@ -18,6 +18,16 @@ export function RatingButtons({ buildId }: { buildId: string }) {
   // Só a resposta do clique mais recente vale: uma falha atrasada do 👍 não pode apagar o 👎
   // que o servidor já registrou depois (chaos R7).
   const latest = useRef(0);
+
+  // Ao abrir a build, marca o voto já registrado (#50). Um clique feito antes de a leitura
+  // voltar vale mais que ela; uma falha na leitura só deixa os botões desmarcados.
+  useEffect(() => {
+    const request = latest.current;
+    getMyRating(buildId).then(
+      (value) => request === latest.current && value && setSelected(value),
+      () => {},
+    );
+  }, [buildId]);
 
   function rate(value: Rating) {
     const previous = selected;

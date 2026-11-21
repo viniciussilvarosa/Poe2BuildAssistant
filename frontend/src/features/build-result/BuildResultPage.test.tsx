@@ -2,11 +2,16 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { routes } from "../../app/routes";
-import { getBuild } from "../../api/builds";
+import { getMyRating, getBuild } from "../../api/builds";
 import { ApiError } from "../../api/client";
 import { buildFixture } from "./fixtures";
 
 vi.mock("../../api/builds");
+// O voto atual é lido ao abrir a build (#50); nestes testes ninguém votou ainda.
+beforeEach(() => {
+  vi.mocked(getMyRating).mockResolvedValue(null);
+});
+
 
 const ID = "00000000-0000-0000-0000-000000000042";
 

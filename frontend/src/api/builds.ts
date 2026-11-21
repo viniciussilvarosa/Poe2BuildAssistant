@@ -153,3 +153,9 @@ export type Rating = "UP" | "DOWN";
 export function rateBuild(id: string, value: Rating): Promise<void> {
   return apiSend<void>("POST", `/api/builds/${encodeURIComponent(id)}/rating`, { value });
 }
+
+/** O voto que este avaliador já deu nesta build, ou null (204: ainda não votou). */
+export async function getMyRating(id: string): Promise<Rating | null> {
+  const body = await apiGet<{ value: Rating } | undefined>(`/api/builds/${encodeURIComponent(id)}/rating`);
+  return body?.value ?? null;
+}
