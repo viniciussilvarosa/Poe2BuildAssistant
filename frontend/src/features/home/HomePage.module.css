@@ -1,9 +1,11 @@
 /* ---- Arte de fundo: ancorada à direita, nunca esticada além da altura da tela ---- */
 
 .arte {
+  /* A fonte tem 736px: com teto de 1000px, a ampliação máxima é ~1,36× (chaos Z2). */
+  --altura-arte: max(100svh, 44rem);
   position: absolute;
   inset: 0 0 auto 0;
-  height: max(100svh, 44rem);
+  height: min(var(--altura-arte), 1000px);
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
@@ -87,8 +89,12 @@
     0 18px 48px rgb(0 0 0 / 45%);
 }
 
+/* O campo não tem contorno próprio: o foco aparece na moldura inteira, com 2px como no resto do
+   site, por fora da borda dupla (chaos Z1). */
 .tooltip:focus-within {
   border-color: var(--osso);
+  outline: 2px solid var(--osso);
+  outline-offset: 6px;
 }
 
 .campo {
@@ -250,5 +256,19 @@
 
   .passos ol {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Reserva para navegadores sem image-set(type()), como o Safari 16 (chaos Z3). Fica num @supports
+   porque o minificador descarta a declaração duplicada com url() simples. */
+@supports not (background-image: image-set("x.jpg" type("image/jpeg"))) {
+  .arte::before {
+    background-image: url("../../assets/key-art/key-art-1600.jpg");
+  }
+
+  @media (max-width: 56rem) {
+    .arte::before {
+      background-image: url("../../assets/key-art/key-art-900.jpg");
+    }
   }
 }
