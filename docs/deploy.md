@@ -19,7 +19,7 @@ Para exigir o CI verde antes do merge: *Settings → Branches → Branch protect
 
 | Peça | Onde |
 | --- | --- |
-| App | Cloud Run, serviço `poe2`, região `us-central1`, projeto `poe2buildassistant`: https://poe2-877547383313.us-central1.run.app |
+| App | Cloud Run, serviço `poe2buildassistant`, região `us-central1`, projeto `poe2buildassistant`: https://poe2buildassistant-877547383313.us-central1.run.app |
 | Imagem | Artifact Registry `us-central1-docker.pkg.dev/poe2buildassistant/poe2/poe2buildassistant` (limpeza automática: guarda as 2 mais recentes) |
 | Banco | Neon, projeto `proud-breeze-19471968`, branch `production`, AWS US East 2 (Ohio) |
 | Segredos | Secret Manager: `GEMINI_API_KEY`, `GOOGLE_CLIENT_SECRET`, `QUOTA_IP_SALT`, `DB_PASSWORD` |
@@ -35,14 +35,14 @@ Configuração do serviço: 1 GiB e 1 vCPU, timeout de 300 s (cobre o stream de 
 ./mvnw -DskipTests package   # o commit já passou no CI
 IMG=us-central1-docker.pkg.dev/poe2buildassistant/poe2/poe2buildassistant:sha-$(git rev-parse HEAD)
 docker build -t "$IMG" . && docker push "$IMG"
-gcloud run deploy poe2 --image="$IMG" --region=us-central1
+gcloud run deploy poe2buildassistant --image="$IMG" --region=us-central1
 ```
 
 O `gcloud run deploy` só com `--image` mantém variáveis, segredos e limites do deploy anterior.
 
-**Rollback:** `gcloud run revisions list --service=poe2 --region=us-central1` e depois `gcloud run services update-traffic poe2 --region=us-central1 --to-revisions=<revisão anterior>=100`. Migrations não voltam junto: para desfazer dados, use o *restore* do branch no Neon (point-in-time).
+**Rollback:** `gcloud run revisions list --service=poe2buildassistant --region=us-central1` e depois `gcloud run services update-traffic poe2buildassistant --region=us-central1 --to-revisions=<revisão anterior>=100`. Migrations não voltam junto: para desfazer dados, use o *restore* do branch no Neon (point-in-time).
 
-**Trocar um segredo:** `printf '%s' '<novo valor>' | gcloud secrets versions add <NOME> --data-file=-` e um novo deploy (`gcloud run deploy poe2 --image=<a mesma imagem> --region=us-central1`) para o serviço ler a versão nova.
+**Trocar um segredo:** `printf '%s' '<novo valor>' | gcloud secrets versions add <NOME> --data-file=-` e um novo deploy (`gcloud run deploy poe2buildassistant --image=<a mesma imagem> --region=us-central1`) para o serviço ler a versão nova.
 
 ## Rodar a imagem
 
