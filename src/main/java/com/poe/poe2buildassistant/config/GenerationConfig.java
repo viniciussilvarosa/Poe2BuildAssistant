@@ -16,7 +16,7 @@ class GenerationConfig {
      * @param sliceMaxItems limite por tipo de item no recorte enviado ao LLM
      */
     @ConfigurationProperties("app.generation")
-    record GenerationProperties(@DefaultValue("2") int maxAttempts, @DefaultValue("60") int sliceMaxItems) {}
+    record GenerationProperties(@DefaultValue("2") int maxAttempts, @DefaultValue("1000") int sliceMaxItems) {}
 
     @Bean
     GenerationSettings generationSettings(GenerationProperties properties) {

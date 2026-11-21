@@ -35,6 +35,8 @@ class BuildPersistenceChaosTest {
 
     @BeforeEach
     void versao() {
+        // A carga inicial (V5) já publica o patch 0.5; o teste monta o próprio catálogo do zero.
+        jdbc.sql("DELETE FROM catalog_version").update();
         versionId = jdbc.sql("INSERT INTO catalog_version (patch, status) VALUES ('0.4', 'PUBLISHED') RETURNING id")
                 .query(Long.class)
                 .single();
