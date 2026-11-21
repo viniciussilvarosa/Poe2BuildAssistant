@@ -29,8 +29,9 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  *       (BFF, ADR-001); ao entrar, volta para "/". Logout por {@code POST /logout} com CSRF.
  *   <li>CSRF no modo SPA: o token vai no cookie {@code XSRF-TOKEN} (legível pelo React) e volta no
  *       header {@code X-XSRF-TOKEN}.
- *   <li>O SPA (arquivos do build e as rotas do React Router) é público só para GET; qualquer
- *       outra rota é negada.
+ *   <li>O SPA (arquivos do build e as rotas do React Router) é público só para GET. Um GET para
+ *       endereço desconhecido recebe o SPA com 404 (a página "não encontrada" do React); qualquer
+ *       outro método fora da API é negado.
  *   <li>Sem cache de requisições: acessos anônimos, inclusive negados, não criam sessão HTTP.
  * </ul>
  */
@@ -66,6 +67,11 @@ public class SecurityConfig {
                                         .requestMatchers(HttpMethod.GET, SpaForwardController.STATIC)
                                         .permitAll()
                                         .requestMatchers(HttpMethod.GET, SpaForwardController.ROUTES)
+                                        .permitAll()
+                                        // Navegação para um endereço desconhecido: o ApiExceptionHandler
+                                        // devolve o SPA com 404 (bug #48). Só GET; arquivos internos não
+                                        // estão em classpath:/static e nunca são servidos.
+                                        .requestMatchers(HttpMethod.GET, "/**")
                                         .permitAll()
                                         .anyRequest()
                                         .denyAll())
