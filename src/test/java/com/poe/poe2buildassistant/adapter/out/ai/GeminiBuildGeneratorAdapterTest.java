@@ -130,6 +130,40 @@ class GeminiBuildGeneratorAdapterTest {
     }
 
     @Test
+    @DisplayName("404 (modelo descontinuado ou inexistente) é configuração: ProviderUnavailable, não resposta malformada (bug #44)")
+    void modeloInexistente() {
+        ChatModel model = prompt -> {
+            throw new RuntimeException("Failed to generate content", new ApiException(
+                    404, "NOT_FOUND", "This model models/gemini-2.5-flash is no longer available to new users."));
+        };
+
+        assertThatThrownBy(() -> adapter(model).generate(rangerBow, slice, List.of()))
+                .isInstanceOfSatisfying(ProviderUnavailable.class, e -> assertThat(e.retryAt()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("400 FAILED_PRECONDITION (região, faturamento) é configuração: ProviderUnavailable")
+    void precondicao() {
+        ChatModel model = prompt -> {
+            throw new ApiException(400, "FAILED_PRECONDITION", "User location is not supported for the API use.");
+        };
+
+        assertThatThrownBy(() -> adapter(model).generate(rangerBow, slice, List.of()))
+                .isInstanceOf(ProviderUnavailable.class);
+    }
+
+    @Test
+    @DisplayName("400 INVALID_ARGUMENT do pedido continua GenerationFailed (não é indisponibilidade)")
+    void argumentoInvalido() {
+        ChatModel model = prompt -> {
+            throw new ApiException(400, "INVALID_ARGUMENT", "Request contains an invalid argument.");
+        };
+
+        assertThatThrownBy(() -> adapter(model).generate(rangerBow, slice, List.of()))
+                .isInstanceOf(GenerationFailed.class);
+    }
+
+    @Test
     @DisplayName("erro 5xx do provedor vira ProviderUnavailable")
     void erroDoServidor() {
         ChatModel model = prompt -> {

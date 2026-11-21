@@ -119,7 +119,7 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
         for (Throwable t = failure; t != null; t = t.getCause()) {
             if (t instanceof ApiException api) {
                 if (isMisconfigured(api)) {
-                    // Chave inválida ou sem permissão: problema de configuração, não do pedido (G3).
+                    // Chave, permissão, modelo inexistente ou pré-condição: configuração, não pedido (G3, #44).
                     log.atError().setMessage("ai.provider.misconfigured").addKeyValue("status", api.code()).log();
                     return new ProviderUnavailable(Optional.empty());
                 }
@@ -143,9 +143,19 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
         return new GenerationFailed();
     }
 
+    /**
+     * Erro de configuração do lado do servidor: regenerar não resolve e o usuário não tem culpa.
+     * Inclui 404 (modelo descontinuado ou inexistente: todas as gerações caíam em "resposta
+     * malformada", repetiam a chamada e não devolviam a cota, bug #44) e 400 FAILED_PRECONDITION
+     * (região ou faturamento). Um 400 INVALID_ARGUMENT do pedido continua sendo falha de geração.
+     */
     private static boolean isMisconfigured(ApiException api) {
         String message = api.message() == null ? "" : api.message().toLowerCase(Locale.ROOT);
-        return api.code() == 401 || api.code() == 403 || (api.code() == 400 && message.contains("api key"));
+        String status = api.status() == null ? "" : api.status();
+        return api.code() == 401
+                || api.code() == 403
+                || api.code() == 404
+                || (api.code() == 400 && (message.contains("api key") || "FAILED_PRECONDITION".equals(status)));
     }
 
     /**
