@@ -62,6 +62,11 @@ class BuildControllerTest {
         }
 
         /** Executor síncrono: o stream inteiro é produzido antes do controller retornar. */
+        @Bean
+        GenerationStreamTimeout generationStreamTimeout() {
+            return new GenerationStreamTimeout(java.time.Duration.ofSeconds(90));
+        }
+
         @Bean(BuildController.EXECUTOR)
         Executor buildGenerationExecutor() {
             return new SyncTaskExecutor();

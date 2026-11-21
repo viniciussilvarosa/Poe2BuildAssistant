@@ -52,6 +52,11 @@ class SecurityChaosTest {
             return new RequesterResolver("salt-de-teste");
         }
 
+        @Bean
+        com.poe.poe2buildassistant.adapter.in.web.build.GenerationStreamTimeout generationStreamTimeout() {
+            return new com.poe.poe2buildassistant.adapter.in.web.build.GenerationStreamTimeout(java.time.Duration.ofSeconds(90));
+        }
+
         @Bean("buildGenerationExecutor")
         Executor buildGenerationExecutor() {
             return new SyncTaskExecutor();
