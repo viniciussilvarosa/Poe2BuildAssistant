@@ -7,6 +7,7 @@ import com.poe.poe2buildassistant.TestcontainersConfiguration;
 import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,12 @@ class CatalogPersistenceChaosTest {
 
     @Autowired private CatalogPersistenceAdapter adapter;
     @Autowired private JdbcClient jdbc;
+
+    /** A carga inicial (V5) já publica o patch 0.5; cada teste monta o próprio catálogo do zero. */
+    @BeforeEach
+    void semCargaInicial() {
+        jdbc.sql("DELETE FROM catalog_version").update();
+    }
     @Autowired private EntityManagerFactory emf;
 
     private long version(String patch, String status) {

@@ -17,6 +17,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,8 @@ class CatalogOptionsChaosTest {
         @LocalServerPort private int port;
         @Autowired private JdbcClient jdbc;
 
+        /** A carga inicial (V5) já publica o patch 0.5; cada ataque monta o próprio catálogo. */
+        @BeforeEach
         @AfterEach
         void limpar() {
             jdbc.sql("DELETE FROM catalog_version").update();

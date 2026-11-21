@@ -10,6 +10,7 @@ import com.poe.poe2buildassistant.domain.catalog.PassiveNotable;
 import com.poe.poe2buildassistant.domain.catalog.SkillGem;
 import com.poe.poe2buildassistant.domain.shared.CatalogNotPublished;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,12 @@ class CatalogPersistenceAdapterTest {
 
     @Autowired private CatalogPersistenceAdapter adapter;
     @Autowired private JdbcClient jdbc;
+
+    /** A carga inicial (V5) já publica o patch 0.5; cada teste monta o próprio catálogo do zero. */
+    @BeforeEach
+    void semCargaInicial() {
+        jdbc.sql("DELETE FROM catalog_version").update();
+    }
 
     private long version(String patch, String status) {
         return jdbc.sql("INSERT INTO catalog_version (patch, status) VALUES (?, ?) RETURNING id")
