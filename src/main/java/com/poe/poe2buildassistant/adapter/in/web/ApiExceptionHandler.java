@@ -40,7 +40,7 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleHttpMessageNotReadable(
             HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         // A dica do campo concept só faz sentido no formulário de build; o admin recebe a genérica (chaos C6).
-        boolean buildForm = request instanceof ServletWebRequest web && web.getRequest().getRequestURI().startsWith("/api/builds");
+        boolean buildForm = request instanceof ServletWebRequest web && web.getRequest().getRequestURI().startsWith("/api/builds/generate");
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 buildForm

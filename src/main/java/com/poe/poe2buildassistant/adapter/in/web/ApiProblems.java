@@ -1,5 +1,6 @@
 package com.poe.poe2buildassistant.adapter.in.web;
 
+import com.poe.poe2buildassistant.domain.shared.BuildNotFound;
 import com.poe.poe2buildassistant.domain.shared.CatalogNotPublished;
 import com.poe.poe2buildassistant.domain.shared.CatalogVersionNotEditable;
 import com.poe.poe2buildassistant.domain.shared.CatalogVersionNotFound;
@@ -32,6 +33,7 @@ public final class ApiProblems {
                     problem(HttpStatus.SERVICE_UNAVAILABLE, "IA indisponível", p.getMessage(), p.retryAt().orElse(null));
             case CatalogNotPublished c -> problem(HttpStatus.SERVICE_UNAVAILABLE, "Catálogo indisponível", c.getMessage(), null);
             case GenerationFailed g -> problem(HttpStatus.BAD_GATEWAY, "Geração falhou", g.getMessage(), null);
+            case BuildNotFound b -> problem(HttpStatus.NOT_FOUND, "Build não encontrada", b.getMessage(), null);
             case CatalogVersionNotFound n -> problem(HttpStatus.NOT_FOUND, "Versão do catálogo não encontrada", n.getMessage(), null);
             case CatalogVersionNotEditable n -> problem(HttpStatus.CONFLICT, "Versão publicada", n.getMessage(), null);
             case DraftAlreadyExists d -> problem(HttpStatus.CONFLICT, "Rascunho já existe", d.getMessage(), null);
