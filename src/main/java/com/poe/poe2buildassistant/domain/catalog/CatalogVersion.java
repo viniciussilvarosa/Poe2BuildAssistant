@@ -5,9 +5,11 @@ import java.util.Objects;
 /** Versão do catálogo, uma por patch do jogo. Só uma fica publicada por vez. */
 public record CatalogVersion(long id, String patch, Status status) {
 
+    /** Rascunho (editável) → publicada (a vigente, imutável) → arquivada (nunca apagada: builds antigas apontam para ela). */
     public enum Status {
         DRAFT,
-        PUBLISHED
+        PUBLISHED,
+        ARCHIVED
     }
 
     public CatalogVersion {

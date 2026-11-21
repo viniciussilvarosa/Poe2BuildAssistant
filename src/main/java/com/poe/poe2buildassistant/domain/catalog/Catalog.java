@@ -124,6 +124,68 @@ public final class Catalog {
         return List.copyOf(playstyles.values());
     }
 
+    /**
+     * Catálogo novo com o item incluído, ou trocado se já houver um do mesmo tipo e nome. As
+     * invariantes são conferidas de novo: ascendência sem classe ou gema com arma inexistente é
+     * recusada com {@link IllegalArgumentException}.
+     */
+    public Catalog with(CatalogItem item) {
+        Builder b = copyWithout(item.type(), item.name());
+        switch (item.type()) {
+            case CLASS -> b.characterClass(new CharacterClass(item.name()));
+            case ASCENDANCY -> {
+                CharacterClass owner = findClass(item.characterClass())
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "A classe " + item.characterClass() + " não existe neste catálogo"));
+                b.ascendancy(new Ascendancy(item.name(), owner));
+            }
+            case WEAPON_TYPE -> b.weaponType(new WeaponType(item.name()));
+            case SKILL_GEM -> b.skillGem(new SkillGem(item.name(), item.weaponTypes()));
+            case SUPPORT_GEM -> b.supportGem(new SupportGem(item.name()));
+            case PLAYSTYLE -> b.playstyle(new Playstyle(item.name()));
+        }
+        return b.build();
+    }
+
+    /** Catálogo novo sem o item. Recusa item inexistente e remoção que deixaria algo órfão. */
+    public Catalog without(CatalogItem.Type type, String name) {
+        if (!contains(type, name)) {
+            throw new IllegalArgumentException(name + " não existe neste catálogo");
+        }
+        return copyWithout(type, name).build();
+    }
+
+    private boolean contains(CatalogItem.Type type, String name) {
+        return switch (type) {
+            case CLASS -> findClass(name).isPresent();
+            case ASCENDANCY -> findAscendancy(name).isPresent();
+            case WEAPON_TYPE -> findWeaponType(name).isPresent();
+            case SKILL_GEM -> findSkillGem(name).isPresent();
+            case SUPPORT_GEM -> findSupportGem(name).isPresent();
+            case PLAYSTYLE -> findPlaystyle(name).isPresent();
+        };
+    }
+
+    private Builder copyWithout(CatalogItem.Type type, String name) {
+        String key = CatalogNames.normalize(name);
+        Builder b = builder(version);
+        keep(classes, CatalogItem.Type.CLASS, type, key).forEach(b::characterClass);
+        keep(ascendancies, CatalogItem.Type.ASCENDANCY, type, key).forEach(b::ascendancy);
+        keep(weaponTypes, CatalogItem.Type.WEAPON_TYPE, type, key).forEach(b::weaponType);
+        keep(skillGems, CatalogItem.Type.SKILL_GEM, type, key).forEach(b::skillGem);
+        keep(supportGems, CatalogItem.Type.SUPPORT_GEM, type, key).forEach(b::supportGem);
+        keep(playstyles, CatalogItem.Type.PLAYSTYLE, type, key).forEach(b::playstyle);
+        b.notables(notables.values());
+        return b;
+    }
+
+    private static <T> List<T> keep(Map<String, T> index, CatalogItem.Type own, CatalogItem.Type removed, String key) {
+        return index.entrySet().stream()
+                .filter(e -> own != removed || !e.getKey().equals(key))
+                .map(Map.Entry::getValue)
+                .toList();
+    }
+
     private static <T> Optional<T> find(Map<String, T> index, String name) {
         return Optional.ofNullable(index.get(CatalogNames.normalize(name)));
     }
