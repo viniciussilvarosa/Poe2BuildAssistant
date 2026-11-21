@@ -97,6 +97,15 @@ span.entrar button {
   padding: 0 var(--margem);
 }
 
+/* Mesmo aviso da tela de configuração: faixa de pedra com fio dourado à esquerda. */
+.aviso {
+  max-width: var(--medida);
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border-left: 3px solid var(--ouro-orbe);
+  background: var(--pedra);
+}
+
 .rodape {
   display: flex;
   flex-wrap: wrap;
