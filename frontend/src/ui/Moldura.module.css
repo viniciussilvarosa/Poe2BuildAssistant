@@ -1,0 +1,53 @@
+/*
+ * Moldura de tooltip de item do jogo: borda dupla fina em ouro velho e separador com losango.
+ * É a assinatura visual dos painéis principais (formulário, progresso, resultado).
+ */
+
+.moldura {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.25rem 1.35rem 1.35rem;
+  background: var(--vidro);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--ouro-velho);
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 3px rgb(18 22 30 / 75%),
+    0 0 0 4px rgb(138 109 59 / 45%),
+    0 18px 48px rgb(0 0 0 / 45%);
+}
+
+.separador {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ouro-velho) 18%, var(--ouro-velho) 82%, transparent);
+}
+
+.separador::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  background: var(--ardosia);
+  border: 1px solid var(--ouro-velho);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* Ouro de orbe: exclusivo da ação principal da tela. */
+.acaoPrincipal {
+  padding: 0.75rem 1.6rem;
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--texto-base);
+  color: var(--ardosia);
+  background: var(--ouro-orbe);
+  border: 0;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.acaoPrincipal:hover {
+  background: var(--ouro-orbe-forte);
+}
