@@ -13,9 +13,17 @@ const STEPS: { step: GenerationStep; label: string }[] = [
   { step: "SAVING", label: "Salvando" },
 ];
 
+const KNOWN: GenerationStep[] = [...STEPS.map((s) => s.step), "DONE"];
+
+/** Etapa desconhecida (backend mais novo) mantém a última conhecida; o percentual nunca recua (chaos K6). */
+function next(current: ProgressEvent, event: ProgressEvent): ProgressEvent {
+  const percent = Math.max(current.percent, Number.isFinite(event.percent) ? event.percent : 0);
+  return { step: KNOWN.includes(event.step) ? event.step : current.step, percent };
+}
+
 export function GeneratingPage() {
   const navigate = useNavigate();
-  const { request } = (useLocation().state ?? {}) as CreateBuildState;
+  const { request, started: startedBefore } = (useLocation().state ?? {}) as CreateBuildState & { started?: boolean };
   const [progress, setProgress] = useState<ProgressEvent>({ step: "VALIDATING_INPUT", percent: 0 });
   // Uma geração por visita: o StrictMode monta o efeito duas vezes e cada POST gasta cota.
   const started = useRef(false);
@@ -23,10 +31,20 @@ export function GeneratingPage() {
 
   useEffect(() => {
     mounted.current = true;
-    if (request && !started.current) {
+    if (request && !startedBefore && !started.current) {
       started.current = true;
-      generateBuild(request, (event) => mounted.current && setProgress(event))
-        .then((build) => mounted.current && navigate(`/builds/${build.id}`, { replace: true, state: { build } }))
+      // Marca a entrada do histórico: voltar a ela com o botão Voltar não gera outra build (chaos K5).
+      navigate(".", { replace: true, state: { request, started: true } });
+      generateBuild(request, (event) => mounted.current && setProgress((current) => next(current, event)))
+        .then((build) => {
+          if (!mounted.current) return;
+          if (typeof build?.id !== "string" || !build.id) {
+            // Contrato violado: sem id não há para onde ir (chaos K7).
+            console.error("build.stream.done_without_id");
+            throw new ApiError(0, GENERIC_ERROR);
+          }
+          navigate(`/builds/${build.id}`, { replace: true, state: { build } });
+        })
         .catch((e: unknown) => {
           if (!mounted.current) return;
           if (!(e instanceof ApiError)) console.error("build.generation.unexpected", e);
@@ -40,10 +58,14 @@ export function GeneratingPage() {
     return () => {
       mounted.current = false;
     };
-  }, [request, navigate]);
+  }, [request, startedBefore, navigate]);
 
   if (!request) {
     return <Navigate to="/criar" replace />;
+  }
+  if (startedBefore && !started.current) {
+    // Voltou a uma geração que já começou: devolve o formulário preenchido em vez de gastar cota.
+    return <Navigate to="/criar" replace state={{ request }} />;
   }
 
   const current = progress.step === "DONE" ? STEPS.length : STEPS.findIndex((s) => s.step === progress.step);
