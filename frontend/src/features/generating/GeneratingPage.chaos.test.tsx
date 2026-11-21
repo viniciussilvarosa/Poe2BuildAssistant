@@ -17,7 +17,7 @@ function controlled() {
   let resolve: (b: unknown) => void = () => {};
   vi.mocked(generateBuild).mockImplementation((_r, p) => {
     onProgress = p;
-    return new Promise((res) => (resolve = res)) as ReturnType<typeof generateBuild>;
+    return new Promise((res) => (resolve = res as (b: unknown) => void)) as ReturnType<typeof generateBuild>;
   });
   return {
     progress: (e: unknown) => act(() => onProgress(e as ProgressEvent)),
