@@ -52,6 +52,16 @@ class SpaIntegrationTest {
     }
 
     @Test
+    @DisplayName("fora de prod (localhost em HTTP), o cookie de sessão não é Secure, senão o login local quebra (#83)")
+    void cookieDeSessaoSemSecureEmDev() throws Exception {
+        HttpResponse<String> r = get("/oauth2/authorization/google");
+
+        String sessao = r.headers().allValues("Set-Cookie").stream()
+                .filter(c -> c.startsWith("JSESSIONID=")).findFirst().orElseThrow();
+        assertThat(sessao).doesNotContainIgnoringCase("; Secure");
+    }
+
+    @Test
     @DisplayName("assets gerados pelo Vite são servidos")
     void assetsServidos() throws Exception {
         String index = get("/").body();
