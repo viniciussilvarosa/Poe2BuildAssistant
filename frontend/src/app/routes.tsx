@@ -1,4 +1,5 @@
 import type { RouteObject } from "react-router";
+import { AdminCatalogPage } from "../features/admin-catalog/AdminCatalogPage";
 import { BuildResultPage } from "../features/build-result/BuildResultPage";
 import { CreateBuildPage } from "../features/create-build/CreateBuildPage";
 import { GeneratingPage } from "../features/generating/GeneratingPage";
@@ -8,7 +9,7 @@ import { NotFoundPage } from "./NotFoundPage";
 
 /**
  * Rotas do SPA. Reservadas para os próximos cards (o backend já as encaminha ao index.html):
- * /minhas-builds (#15), /admin (#18).
+ * /minhas-builds (#15).
  */
 export const routes: RouteObject[] = [
   {
@@ -18,6 +19,7 @@ export const routes: RouteObject[] = [
       { path: "criar", element: <CreateBuildPage /> },
       { path: "gerando", element: <GeneratingPage /> },
       { path: "builds/:id", element: <BuildResultPage /> },
+      { path: "admin", element: <AdminCatalogPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

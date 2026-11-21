@@ -1,7 +1,14 @@
+import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router";
+import { getMe, type Me } from "../api/me";
 import styles from "./Layout.module.css";
 
 export function Layout() {
+  const [me, setMe] = useState<Me | null>(null);
+  useEffect(() => {
+    getMe().then(setMe);
+  }, []);
+
   return (
     <div className={styles.pagina}>
       <a className="pular-para-conteudo" href="#conteudo">
@@ -20,6 +27,7 @@ export function Layout() {
             Início
           </NavLink>
           <NavLink to="/minhas-builds">Minhas builds</NavLink>
+          {me?.role === "ADMIN" && <NavLink to="/admin">Admin</NavLink>}
           <a href="/#como-funciona">Como funciona</a>
           <a href="/oauth2/authorization/google" className={styles.entrar}>
             Entrar

@@ -56,10 +56,18 @@ export function apiGet<T>(path: string): Promise<T> {
 }
 
 export function apiPost<T>(path: string, body: unknown): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json", Accept: "application/json" };
+  return apiSend<T>("POST", path, body);
+}
+
+/** POST, PUT ou DELETE: leva o CSRF, como o Spring exige em toda requisição que altera estado. */
+export function apiSend<T>(method: "POST" | "PUT" | "DELETE", path: string, body?: unknown): Promise<T> {
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
   const token = csrfToken();
   if (token) {
     headers["X-XSRF-TOKEN"] = token;
   }
-  return request<T>(path, { method: "POST", headers, body: JSON.stringify(body) });
+  return request<T>(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
 }
