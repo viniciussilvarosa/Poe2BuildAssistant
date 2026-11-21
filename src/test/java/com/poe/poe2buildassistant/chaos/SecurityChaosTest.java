@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.poe.poe2buildassistant.adapter.in.web.RequesterResolver;
 import com.poe.poe2buildassistant.application.port.in.GenerateBuildUseCase;
 import com.poe.poe2buildassistant.application.port.in.GetBuildUseCase;
+import com.poe.poe2buildassistant.application.port.in.GetCatalogOptionsUseCase;
 import com.poe.poe2buildassistant.config.SecurityConfig;
 import jakarta.servlet.http.Cookie;
 import java.util.concurrent.Executor;
@@ -54,6 +55,7 @@ class SecurityChaosTest {
 
     @MockitoBean private GenerateBuildUseCase generateBuild;
     @MockitoBean private GetBuildUseCase getBuild;
+    @MockitoBean private GetCatalogOptionsUseCase getCatalogOptions;
 
     @Autowired private MockMvc mvc;
 
