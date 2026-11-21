@@ -58,7 +58,7 @@ class CatalogAdminChaosTest {
         CyclicBarrier juntos = new CyclicBarrier(2);
         Callable<Object> cria = () -> {
             juntos.await();
-            return manage.createDraft("0.6", ADMIN);
+            return manage.createDraft("1.0", ADMIN);
         };
 
         int ok = 0;
@@ -78,7 +78,7 @@ class CatalogAdminChaosTest {
     @Test
     @DisplayName("C2 — apóstrofo tipográfico no PUT não cria uma segunda gema que quebra a carga do catálogo")
     void apostrofoDuplicado() {
-        long draft = manage.createDraft("0.6", ADMIN).id();
+        long draft = manage.createDraft("1.0", ADMIN).id();
 
         manage.saveItem(draft, CatalogItem.skillGem("Alchemist’s Boon", List.of()), ADMIN);
 
@@ -90,7 +90,7 @@ class CatalogAdminChaosTest {
     @Test
     @DisplayName("C3 — rascunho sem gemas, classes ou notables suficientes não pode ser publicado")
     void publicaRascunhoInutil() {
-        long draft = manage.createDraft("0.6", ADMIN).id();
+        long draft = manage.createDraft("1.0", ADMIN).id();
         jdbc.sql("DELETE FROM skill_gem WHERE catalog_version_id = ?").param(draft).update();
 
         assertThatThrownBy(() -> publish.publish(draft, ADMIN)).isInstanceOf(DomainException.class);
@@ -100,7 +100,7 @@ class CatalogAdminChaosTest {
     @Test
     @DisplayName("C4 — versão arquivada não aceita edição")
     void arquivadaImutavel() {
-        long draft = manage.createDraft("0.6", ADMIN).id();
+        long draft = manage.createDraft("1.0", ADMIN).id();
         publish.publish(draft, ADMIN);
         long arquivada = jdbc.sql("SELECT id FROM catalog_version WHERE patch = '0.5'").query(Long.class).single();
 
@@ -111,6 +111,6 @@ class CatalogAdminChaosTest {
     @Test
     @DisplayName("C5 — patch maior que a coluna vira erro de domínio (400), não 500")
     void patchLongo() {
-        assertThatThrownBy(() -> manage.createDraft("0.6-" + "x".repeat(60), ADMIN)).isInstanceOf(DomainException.class);
+        assertThatThrownBy(() -> manage.createDraft("1.0-" + "x".repeat(60), ADMIN)).isInstanceOf(DomainException.class);
     }
 }

@@ -181,7 +181,7 @@ class CatalogPersistenceAdapterTest {
     @Test
     @DisplayName("replaceNotables troca os notables só da versão informada")
     void substituiNotables() {
-        long draft = version("0.6", "DRAFT");
+        long draft = version("1.0", "DRAFT");
         long outra = version("0.4", "PUBLISHED");
         jdbc.sql("INSERT INTO passive_notable (catalog_version_id, name) VALUES (?, 'Antigo'), (?, 'De Outra Versão')")
                 .params(draft, outra)
@@ -200,10 +200,10 @@ class CatalogPersistenceAdapterTest {
     @Test
     @DisplayName("findVersion devolve patch e status; id inexistente devolve vazio")
     void achaVersao() {
-        long draft = version("0.6", "DRAFT");
+        long draft = version("1.0", "DRAFT");
 
         assertThat(adapter.findVersion(draft)).hasValueSatisfying(v -> {
-            assertThat(v.patch()).isEqualTo("0.6");
+            assertThat(v.patch()).isEqualTo("1.0");
             assertThat(v.status()).isEqualTo(com.poe.poe2buildassistant.domain.catalog.CatalogVersion.Status.DRAFT);
         });
         assertThat(adapter.findVersion(-1)).isEmpty();

@@ -59,7 +59,7 @@ class PassiveTreeImportChaosTest {
 
     @BeforeEach
     void rascunho() {
-        draft = jdbc.sql("INSERT INTO catalog_version (patch, status) VALUES ('0.6', 'DRAFT') RETURNING id").query(Long.class).single();
+        draft = jdbc.sql("INSERT INTO catalog_version (patch, status) VALUES ('1.0', 'DRAFT') RETURNING id").query(Long.class).single();
     }
 
     @AfterEach
