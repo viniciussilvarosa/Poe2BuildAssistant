@@ -111,3 +111,14 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Busca da habilidade: mesmo campo de pedra do select, sem a seta. */
+.busca {
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  font: inherit;
+  color: var(--osso);
+  background: var(--pedra);
+  border: 1px solid var(--pedra-borda);
+  border-radius: 2px;
+}
