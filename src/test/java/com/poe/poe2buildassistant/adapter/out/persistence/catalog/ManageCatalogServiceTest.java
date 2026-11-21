@@ -55,10 +55,10 @@ class ManageCatalogServiceTest {
     void criaRascunho() {
         long published = catalogs.loadPublished().version().id();
 
-        CatalogVersion draft = manage.createDraft("0.6", ADMIN);
+        CatalogVersion draft = manage.createDraft("1.0", ADMIN);
 
         assertThat(draft.status()).isEqualTo(CatalogVersion.Status.DRAFT);
-        assertThat(draft.patch()).isEqualTo("0.6");
+        assertThat(draft.patch()).isEqualTo("1.0");
         for (String table : List.of("character_class", "ascendancy", "weapon_type", "skill_gem", "skill_gem_weapon_type",
                 "support_gem", "passive_notable", "playstyle")) {
             assertThat(count(table, draft.id())).as(table).isEqualTo(count(table, published)).isPositive();
@@ -68,15 +68,15 @@ class ManageCatalogServiceTest {
     @Test
     @DisplayName("só pode existir um DRAFT por vez")
     void umRascunho() {
-        manage.createDraft("0.6", ADMIN);
+        manage.createDraft("1.0", ADMIN);
 
-        assertThatThrownBy(() -> manage.createDraft("0.7", ADMIN)).isInstanceOf(DraftAlreadyExists.class);
+        assertThatThrownBy(() -> manage.createDraft("1.1", ADMIN)).isInstanceOf(DraftAlreadyExists.class);
     }
 
     @Test
     @DisplayName("adicionar gema ao DRAFT não altera a versão publicada")
     void editaSoORascunho() {
-        long draft = manage.createDraft("0.6", ADMIN).id();
+        long draft = manage.createDraft("1.0", ADMIN).id();
 
         manage.saveItem(draft, CatalogItem.skillGem("Nova Gem", List.of("Bow")), ADMIN);
 
@@ -98,7 +98,7 @@ class ManageCatalogServiceTest {
     @Test
     @DisplayName("ascendência sem classe existente no DRAFT é recusada")
     void ascendenciaSemClasse() {
-        long draft = manage.createDraft("0.6", ADMIN).id();
+        long draft = manage.createDraft("1.0", ADMIN).id();
 
         assertThatThrownBy(() -> manage.saveItem(draft, CatalogItem.ascendancy("Nova Ascendência", "Classe Inexistente"), ADMIN))
                 .isInstanceOf(InvalidCatalogChange.class)
@@ -108,7 +108,7 @@ class ManageCatalogServiceTest {
     @Test
     @DisplayName("remover item do DRAFT tira só ele, e o publicado continua com o item")
     void removeDoRascunho() {
-        long draft = manage.createDraft("0.6", ADMIN).id();
+        long draft = manage.createDraft("1.0", ADMIN).id();
 
         manage.removeItem(draft, CatalogItem.Type.SUPPORT_GEM, "Pierce I", ADMIN);
 
@@ -120,12 +120,12 @@ class ManageCatalogServiceTest {
     @DisplayName("publicar torna o DRAFT a versão vigente e arquiva a anterior")
     void publica() {
         long anterior = catalogs.loadPublished().version().id();
-        long draft = manage.createDraft("0.6", ADMIN).id();
+        long draft = manage.createDraft("1.0", ADMIN).id();
 
         CatalogVersion published = publish.publish(draft, ADMIN);
 
         assertThat(published.status()).isEqualTo(CatalogVersion.Status.PUBLISHED);
-        assertThat(catalogs.loadPublished().version().patch()).isEqualTo("0.6");
+        assertThat(catalogs.loadPublished().version().patch()).isEqualTo("1.0");
         assertThat(jdbc.sql("SELECT status FROM catalog_version WHERE id = ?").param(anterior).query(String.class).single())
                 .isEqualTo("ARCHIVED");
     }
@@ -133,12 +133,12 @@ class ManageCatalogServiceTest {
     @Test
     @DisplayName("após publicar, opções do formulário refletem a nova versão")
     void opcoesRefletem() {
-        long draft = manage.createDraft("0.6", ADMIN).id();
+        long draft = manage.createDraft("1.0", ADMIN).id();
         manage.saveItem(draft, CatalogItem.playstyle("Veneno"), ADMIN);
 
         publish.publish(draft, ADMIN);
 
-        assertThat(options.get().patch()).isEqualTo("0.6");
+        assertThat(options.get().patch()).isEqualTo("1.0");
         assertThat(options.get().playstyles()).contains("Veneno");
     }
 
@@ -153,7 +153,7 @@ class ManageCatalogServiceTest {
     @Test
     @DisplayName("o catálogo do rascunho lido de volta passa nas invariantes do domínio")
     void rascunhoCoerente() {
-        long draft = manage.createDraft("0.6", ADMIN).id();
+        long draft = manage.createDraft("1.0", ADMIN).id();
 
         Catalog copy = manage.draftCatalog(draft);
 

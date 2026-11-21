@@ -81,7 +81,7 @@ class ImportPassiveTreeServiceTest {
     @Test
     @DisplayName("grava notables na versão de catálogo informada, substituindo os anteriores")
     void substitui() {
-        catalogs.versions.put(7L, new CatalogVersion(7, "0.6", CatalogVersion.Status.DRAFT));
+        catalogs.versions.put(7L, new CatalogVersion(7, "1.0", CatalogVersion.Status.DRAFT));
         catalogs.notables.put(7L, List.of(new PassiveNotable("Antigo", "")));
 
         int imported = service.importInto(7L);

@@ -53,7 +53,7 @@ class AdminCatalogControllerTest {
     @DisplayName("usuário sem ADMIN recebe 403 em /api/admin/**")
     void userSemAdmin() throws Exception {
         mvc.perform(post("/api/admin/catalog/drafts").with(csrf()).with(oauth2Login().oauth2User(SessionUsers.of(UUID.randomUUID(), "Ana", "USER")))
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"patch\":\"0.6\"}"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"patch\":\"1.0\"}"))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(manage);
     }
@@ -61,7 +61,7 @@ class AdminCatalogControllerTest {
     @Test
     @DisplayName("visitante recebe 401")
     void visitante() throws Exception {
-        mvc.perform(post("/api/admin/catalog/drafts").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"patch\":\"0.6\"}"))
+        mvc.perform(post("/api/admin/catalog/drafts").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"patch\":\"1.0\"}"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -69,7 +69,7 @@ class AdminCatalogControllerTest {
     @DisplayName("ADMIN sem CSRF é recusado")
     void semCsrf() throws Exception {
         mvc.perform(post("/api/admin/catalog/drafts").with(oauth2Login().oauth2User(admin()))
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"patch\":\"0.6\"}"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"patch\":\"1.0\"}"))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(manage);
     }
@@ -77,10 +77,10 @@ class AdminCatalogControllerTest {
     @Test
     @DisplayName("ADMIN cria rascunho: 201 com id, patch e status; a auditoria recebe o id do admin")
     void criaRascunho() throws Exception {
-        when(manage.createDraft("0.6", ADMIN_ID.toString())).thenReturn(new CatalogVersion(9, "0.6", CatalogVersion.Status.DRAFT));
+        when(manage.createDraft("1.0", ADMIN_ID.toString())).thenReturn(new CatalogVersion(9, "1.0", CatalogVersion.Status.DRAFT));
 
         mvc.perform(post("/api/admin/catalog/drafts").with(csrf()).with(oauth2Login().oauth2User(admin()))
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"patch\":\"0.6\"}"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"patch\":\"1.0\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(9))
                 .andExpect(jsonPath("$.status").value("DRAFT"));
@@ -139,7 +139,7 @@ class AdminCatalogControllerTest {
     @Test
     @DisplayName("publicar responde 200 com a versão publicada")
     void publica() throws Exception {
-        when(publish.publish(9L, ADMIN_ID.toString())).thenReturn(new CatalogVersion(9, "0.6", CatalogVersion.Status.PUBLISHED));
+        when(publish.publish(9L, ADMIN_ID.toString())).thenReturn(new CatalogVersion(9, "1.0", CatalogVersion.Status.PUBLISHED));
 
         mvc.perform(post("/api/admin/catalog/drafts/9/publish").with(csrf()).with(oauth2Login().oauth2User(admin())))
                 .andExpect(status().isOk())
