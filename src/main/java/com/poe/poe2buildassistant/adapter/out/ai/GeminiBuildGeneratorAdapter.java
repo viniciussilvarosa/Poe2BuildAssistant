@@ -241,8 +241,12 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
         return g.weaponTypes().isEmpty() ? g.name() : g.name() + " (armas: " + String.join("/", g.weaponTypes()) + ")";
     }
 
+    /**
+     * Um nome por linha: há nomes com vírgula ("Morgana, the Storm Seer"), que numa lista separada
+     * por vírgulas viravam dois nomes para a IA (QA-11). Custa ~1 token a mais por nome.
+     */
     private static <T> String names(List<T> items, Function<T, String> name) {
-        return items.stream().map(name).collect(Collectors.joining(", "));
+        return items.stream().map(name).map(n -> "\n  - " + n).collect(Collectors.joining());
     }
 
     private static String feedback(List<BuildViolation> violations) {
