@@ -116,6 +116,18 @@ class GenerateBuildServiceTest {
     }
 
     @Test
+    @DisplayName("suporte desconhecido com válidos suficientes é consertado sem nova chamada à IA (QA-02)")
+    void consertaSemRegenerar() {
+        generator.respond(() -> CatalogFixtures.draft(
+                "Ranger", "Deadeye", "Bow", "Ice Shot", List.of("Pierce", "Mirage Archer Support"), CatalogFixtures.FIVE_NOTABLES));
+
+        Build build = service.generate(command("arqueiro", Constraints.none(), visitante), progress);
+
+        assertThat(generator.calls()).isEqualTo(1);
+        assertThat(build.content().supports()).containsExactly("Pierce");
+    }
+
+    @Test
     @DisplayName("após o máximo de tentativas lança GenerationFailed e não salva nada")
     void maximoDeTentativas() {
         generator.respond(GenerateBuildServiceTest::invalido);
