@@ -19,7 +19,7 @@ vi.mock("../../api/catalog");
 vi.mock("../../api/adminCatalog");
 
 const DRAFT: DraftCatalog = {
-  version: { id: 9, patch: "0.6", status: "DRAFT" },
+  version: { id: 9, patch: "1.0", status: "DRAFT" },
   classes: [{ name: "Ranger", ascendancies: ["Deadeye"] }],
   weaponTypes: ["Bow", "Staff"],
   skillGems: [{ name: "Ice Shot", weaponTypes: ["Bow"] }],
@@ -66,13 +66,13 @@ describe("AdminCatalogPage", () => {
   });
 
   it("erro 409 de rascunho existente mostra mensagem amigável", async () => {
-    vi.mocked(createDraft).mockRejectedValue(new ApiError(409, "Já existe um rascunho do catálogo (versão 0.6)."));
+    vi.mocked(createDraft).mockRejectedValue(new ApiError(409, "Já existe um rascunho do catálogo (versão 1.0)."));
     renderAt("/admin");
 
-    await userEvent.type(await screen.findByLabelText("Patch do rascunho"), "0.6");
+    await userEvent.type(await screen.findByLabelText("Patch do rascunho"), "1.0");
     await userEvent.click(screen.getByRole("button", { name: "Criar rascunho" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Já existe um rascunho do catálogo (versão 0.6).");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Já existe um rascunho do catálogo (versão 1.0).");
   });
 
   it("adicionar gema ao rascunho chama a API e aparece na lista", async () => {
@@ -105,15 +105,15 @@ describe("AdminCatalogPage", () => {
 
   it("publicar pede confirmação e mostra sucesso", async () => {
     vi.mocked(getCurrentDraft).mockResolvedValue(DRAFT.version);
-    vi.mocked(publishDraft).mockResolvedValue({ id: 9, patch: "0.6", status: "PUBLISHED" });
+    vi.mocked(publishDraft).mockResolvedValue({ id: 9, patch: "1.0", status: "PUBLISHED" });
     renderAt("/admin");
 
-    await userEvent.click(await screen.findByRole("button", { name: "Publicar 0.6" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Publicar 1.0" }));
     expect(publishDraft).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole("button", { name: "Confirmar publicação" }));
 
     expect(publishDraft).toHaveBeenCalledTimes(1);
-    expect(await screen.findByRole("status")).toHaveTextContent("Versão 0.6 publicada");
+    expect(await screen.findByRole("status")).toHaveTextContent("Versão 1.0 publicada");
   });
 
   it("busca filtra a lista da aba", async () => {

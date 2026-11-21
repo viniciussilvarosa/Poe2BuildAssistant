@@ -111,7 +111,7 @@ function CatalogAdmin() {
       {draftInfo === null && (
         <form className={styles.linha} onSubmit={create}>
           <label htmlFor="patch">Patch do rascunho</label>
-          <input id="patch" value={patch} onChange={(e) => setPatch(e.target.value)} placeholder="Ex.: 0.6" />
+          <input id="patch" value={patch} onChange={(e) => setPatch(e.target.value)} placeholder="Ex.: 1.0" />
           <button type="submit" className={moldura.acaoPrincipal}>
             Criar rascunho
           </button>
