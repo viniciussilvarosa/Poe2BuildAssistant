@@ -5,12 +5,10 @@ import { CreateBuildPage } from "../features/create-build/CreateBuildPage";
 import { GeneratingPage } from "../features/generating/GeneratingPage";
 import { HomePage } from "../features/home/HomePage";
 import { Layout } from "./Layout";
+import { MyBuildsPage } from "../features/my-builds/MyBuildsPage";
 import { NotFoundPage } from "./NotFoundPage";
 
-/**
- * Rotas do SPA. Reservadas para os próximos cards (o backend já as encaminha ao index.html):
- * /minhas-builds (#15).
- */
+/** Rotas do SPA. O backend encaminha cada uma delas ao index.html (SpaForwardController). */
 export const routes: RouteObject[] = [
   {
     element: <Layout />,
@@ -20,6 +18,7 @@ export const routes: RouteObject[] = [
       { path: "gerando", element: <GeneratingPage /> },
       { path: "builds/:id", element: <BuildResultPage /> },
       { path: "admin", element: <AdminCatalogPage /> },
+      { path: "minhas-builds", element: <MyBuildsPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

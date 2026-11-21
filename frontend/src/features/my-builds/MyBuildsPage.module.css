@@ -1,0 +1,60 @@
+.pagina {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 46rem;
+  padding-block: 2.5rem 4rem;
+}
+
+.pagina h1 {
+  font-size: var(--titulo-2);
+}
+
+.convite {
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+  max-width: var(--medida);
+  color: var(--cinza-brasa);
+}
+
+.lista {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cada build é uma linha clicável inteira, separada por fio de ouro velho. */
+.lista a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.15rem 1rem;
+  padding: 0.9rem 0.25rem;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--pedra-borda);
+}
+
+.lista a:hover {
+  border-bottom-color: var(--ouro-velho);
+}
+
+.lista strong {
+  font-size: var(--texto-medio);
+}
+
+.lista span,
+.lista time {
+  color: var(--cinza-brasa);
+}
+
+.lista time {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: var(--texto-pequeno);
+}
+
+.conceito {
+  grid-column: 1 / -1;
+  font-style: italic;
+}
