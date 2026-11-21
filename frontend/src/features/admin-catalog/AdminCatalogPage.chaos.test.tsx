@@ -93,9 +93,12 @@ describe("H2 — editar não pode virar duplicar", () => {
 
     await userEvent.click(await screen.findByRole("tab", { name: "Gemas" }));
     await userEvent.click(screen.getByRole("button", { name: "Editar" }));
-    const nome = screen.getByLabelText("Nome");
-    await userEvent.clear(nome);
-    await userEvent.type(nome, "Ice Shot II");
+    const nome = screen.getByLabelText("Nome") as HTMLInputElement;
+    // Um campo travado na edição não aceita o novo nome; um editável recebe "Ice Shot II".
+    if (!nome.readOnly) {
+      await userEvent.clear(nome);
+      await userEvent.type(nome, "Ice Shot II");
+    }
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
 
     const renomeou = vi.mocked(saveItem).mock.calls.some(([, , body]) => body.name === "Ice Shot II");

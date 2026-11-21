@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import * as admin from "../../api/adminCatalog";
 import type { CatalogVersionInfo, DraftCatalog, ItemType } from "../../api/adminCatalog";
@@ -70,6 +70,9 @@ function CatalogAdmin() {
   const [notice, setNotice] = useState("");
   const [patch, setPatch] = useState("");
   const [confirming, setConfirming] = useState(false);
+  // Uma ação por vez: o ref barra o segundo clique antes de o React redesenhar (chaos A1–A3).
+  const running = useRef(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     getCatalogOptions().then((o) => setPublished(o.patch), () => setPublished("nenhuma"));
@@ -81,11 +84,17 @@ function CatalogAdmin() {
   }, [draftInfo]);
 
   async function act(action: () => Promise<void>) {
+    if (running.current) return;
+    running.current = true;
+    setBusy(true);
     setError(undefined);
     try {
       await action();
     } catch (e) {
       setError(message(e));
+    } finally {
+      running.current = false;
+      setBusy(false);
     }
   }
 
@@ -96,7 +105,7 @@ function CatalogAdmin() {
   const reload = async () => draftInfo && setDraft(await admin.getDraft(draftInfo.id));
 
   return (
-    <section className={styles.pagina}>
+    <section className={styles.pagina} aria-busy={busy}>
       <h1>Catálogo do jogo</h1>
       <p className={styles.apoio}>Versão publicada: {published ?? "…"}</p>
       {error && (
@@ -112,7 +121,7 @@ function CatalogAdmin() {
         <form className={styles.linha} onSubmit={create}>
           <label htmlFor="patch">Patch do rascunho</label>
           <input id="patch" value={patch} onChange={(e) => setPatch(e.target.value)} placeholder="Ex.: 1.0" />
-          <button type="submit" className={moldura.acaoPrincipal}>
+          <button type="submit" className={moldura.acaoPrincipal} disabled={busy}>
             Criar rascunho
           </button>
         </form>
@@ -124,25 +133,25 @@ function CatalogAdmin() {
             <p>
               Rascunho <strong>{draftInfo.patch}</strong>, com {draft.notables} notables.
             </p>
-            <button type="button" onClick={() => act(async () => {
+            <button type="button" disabled={busy} onClick={() => act(async () => {
               const { notables } = await admin.importPassiveTree(draftInfo.id);
               setNotice(`${notables} notables importados da árvore oficial.`);
               await reload();
             })}>
               Importar árvore de passivas
             </button>
-            <button type="button" className={moldura.acaoPrincipal} onClick={() => setConfirming(true)}>
+            <button type="button" className={moldura.acaoPrincipal} disabled={busy} onClick={() => setConfirming(true)}>
               Publicar {draftInfo.patch}
             </button>
           </div>
           {confirming && (
-            <div className={`${moldura.moldura} ${styles.confirmar}`}>
+            <div className={moldura.moldura}>
               <p>
                 Publicar a versão {draftInfo.patch}? Ela passa a valer na hora para os seletores e o validador, e a{" "}
                 {published} é arquivada. Não dá para desfazer.
               </p>
               <div className={styles.linha}>
-                <button type="button" className={moldura.acaoPrincipal} onClick={() => act(async () => {
+                <button type="button" className={moldura.acaoPrincipal} disabled={busy} onClick={() => act(async () => {
                   const version = await admin.publishDraft(draftInfo.id);
                   setConfirming(false);
                   setNotice(`Versão ${version.patch} publicada.`);
@@ -158,7 +167,7 @@ function CatalogAdmin() {
               </div>
             </div>
           )}
-          <ItemTabs draft={draft} onChange={(action) => act(async () => {
+          <ItemTabs draft={draft} busy={busy} onChange={(action) => act(async () => {
             await action();
             await reload();
           })} />
@@ -168,11 +177,13 @@ function CatalogAdmin() {
   );
 }
 
-function ItemTabs({ draft, onChange }: { draft: DraftCatalog; onChange: (action: () => Promise<void>) => void }) {
+function ItemTabs({ draft, busy, onChange }: { draft: DraftCatalog; busy: boolean; onChange: (action: () => Promise<void>) => void }) {
   const [tab, setTab] = useState<ItemType>("classes");
   const [search, setSearch] = useState("");
   const [form, setForm] = useState<Row>({ name: "" });
   const [fieldError, setFieldError] = useState<string>();
+  // A API salva por nome e não renomeia: editando, só os outros campos mudam (chaos A4).
+  const [editing, setEditing] = useState(false);
   const id = draft.version.id;
   const rows = rowsOf(draft, tab).filter((r) => r.name.toLowerCase().includes(search.trim().toLowerCase()));
 
@@ -180,6 +191,7 @@ function ItemTabs({ draft, onChange }: { draft: DraftCatalog; onChange: (action:
     setTab(type);
     setSearch("");
     setForm({ name: "" });
+    setEditing(false);
     setFieldError(undefined);
   }
 
@@ -197,6 +209,7 @@ function ItemTabs({ draft, onChange }: { draft: DraftCatalog; onChange: (action:
     onChange(async () => {
       await admin.saveItem(id, tab, body);
       setForm({ name: "" });
+      setEditing(false);
     });
   }
 
@@ -217,8 +230,13 @@ function ItemTabs({ draft, onChange }: { draft: DraftCatalog; onChange: (action:
       <div role="tabpanel" aria-label={TABS.find((t) => t.type === tab)?.label} className={moldura.moldura}>
         <form className={styles.formulario} onSubmit={save} noValidate>
           <label htmlFor="item-nome">Nome</label>
-          <input id="item-nome" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-            aria-invalid={!!fieldError} aria-describedby={fieldError ? "item-erro" : undefined} />
+          <input id="item-nome" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} readOnly={editing}
+            aria-invalid={!!fieldError} aria-describedby={editing ? "item-editando" : fieldError ? "item-erro" : undefined} />
+          {editing && (
+            <p id="item-editando" className={styles.detalhe}>
+              Editando {form.name}. Para renomear, remova e adicione com o nome novo.
+            </p>
+          )}
           {tab === "ascendancies" && (
             <>
               <label htmlFor="item-classe">Classe</label>
@@ -233,7 +251,7 @@ function ItemTabs({ draft, onChange }: { draft: DraftCatalog; onChange: (action:
           )}
           {tab === "skill-gems" && (
             <fieldset className={styles.armas}>
-              <legend>Armas exigidas (nenhuma = qualquer arma)</legend>
+              <legend className={styles.detalhe}>Armas exigidas (nenhuma = qualquer arma)</legend>
               {draft.weaponTypes.map((w) => (
                 <label key={w}>
                   <input type="checkbox" checked={form.weaponTypes?.includes(w) ?? false} onChange={() => toggleWeapon(w)} />
@@ -247,7 +265,14 @@ function ItemTabs({ draft, onChange }: { draft: DraftCatalog; onChange: (action:
               {fieldError}
             </p>
           )}
-          <button type="submit">Salvar</button>
+          <div className={styles.linha}>
+            <button type="submit" disabled={busy}>Salvar</button>
+            {editing && (
+              <button type="button" onClick={() => select(tab)}>
+                Cancelar edição
+              </button>
+            )}
+          </div>
         </form>
 
         <div className={moldura.separador} aria-hidden="true" />
@@ -259,10 +284,14 @@ function ItemTabs({ draft, onChange }: { draft: DraftCatalog; onChange: (action:
             <li key={r.name}>
               <span>{r.name}</span>
               <span className={styles.detalhe}>{r.detail}</span>
-              <button type="button" onClick={() => setForm(r)}>
+              <button type="button" onClick={() => {
+                setForm(r);
+                setEditing(true);
+                setFieldError(undefined);
+              }}>
                 Editar
               </button>
-              <button type="button" aria-label={`Remover ${r.name}`} onClick={() => onChange(() => admin.removeItem(id, tab, r.name))}>
+              <button type="button" aria-label={`Remover ${r.name}`} disabled={busy} onClick={() => onChange(() => admin.removeItem(id, tab, r.name))}>
                 Remover
               </button>
             </li>

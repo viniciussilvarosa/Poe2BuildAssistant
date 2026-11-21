@@ -29,6 +29,7 @@
 .pagina input:not([type="checkbox"]),
 .pagina select,
 .pagina button:not([class]) {
+  max-width: 100%;
   padding: 0.45rem 0.7rem;
   font: inherit;
   color: var(--osso);
@@ -37,16 +38,9 @@
   border-radius: 2px;
 }
 
-.pagina button:not([class]) {
-  cursor: pointer;
-}
-
 .pagina button:not([class]):hover {
   border-color: var(--ouro-velho);
-}
-
-.confirmar {
-  max-width: var(--medida);
+  cursor: pointer;
 }
 
 [role="tablist"] {
@@ -68,11 +62,6 @@
   justify-items: start;
 }
 
-.formulario input:not([type="checkbox"]),
-.formulario select {
-  width: min(100%, 24rem);
-}
-
 .armas {
   display: flex;
   flex-wrap: wrap;
@@ -86,12 +75,6 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-}
-
-.armas legend {
-  margin-bottom: 0.3rem;
-  color: var(--cinza-brasa);
-  font-size: var(--texto-pequeno);
 }
 
 .erro {
