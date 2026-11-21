@@ -10,6 +10,7 @@ import com.poe.poe2buildassistant.application.port.out.QuotaCounterPort;
 import com.poe.poe2buildassistant.domain.build.Build;
 import com.poe.poe2buildassistant.domain.build.BuildRequest;
 import com.poe.poe2buildassistant.domain.build.BuildValidator;
+import com.poe.poe2buildassistant.domain.build.DraftRepair;
 import com.poe.poe2buildassistant.domain.build.BuildViolation;
 import com.poe.poe2buildassistant.domain.build.CatalogSlice;
 import com.poe.poe2buildassistant.domain.build.GeneratedBuildDraft;
@@ -52,6 +53,7 @@ public class GenerateBuildService implements GenerateBuildUseCase {
     private final QuotaPolicy quotaPolicy;
     private final GenerationSettings settings;
     private final BuildValidator validator = new BuildValidator();
+    private final DraftRepair repair = new DraftRepair();
 
     public GenerateBuildService(
             CatalogRepositoryPort catalogs,
@@ -142,6 +144,16 @@ public class GenerateBuildService implements GenerateBuildUseCase {
             }
 
             progress.emit(GenerationStep.VALIDATING_OUTPUT);
+            DraftRepair.Result repaired = repair.repair(draft, catalog);
+            draft = repaired.draft();
+            if (repaired.changed()) {
+                log.atInfo()
+                        .setMessage("build.generation.draft_repaired")
+                        .addKeyValue("attempt", attempt)
+                        .addKeyValue("corrected", repaired.corrected())
+                        .addKeyValue("dropped", repaired.dropped())
+                        .log();
+            }
             List<BuildViolation> violations = validator.validate(draft, catalog, request);
             if (violations.isEmpty()) {
                 progress.emit(GenerationStep.SAVING);
@@ -156,6 +168,8 @@ public class GenerateBuildService implements GenerateBuildUseCase {
                     .setMessage("build.generation.invalid_draft")
                     .addKeyValue("attempt", attempt)
                     .addKeyValue("violationTypes", violations.stream().map(v -> v.type().name()).distinct().toList())
+                    .addKeyValue("corrected", repaired.corrected())
+                    .addKeyValue("dropped", repaired.dropped())
                     .log();
             feedback = violations;
         }
