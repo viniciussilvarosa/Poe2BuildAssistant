@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.poe.poe2buildassistant.TestcontainersConfiguration;
+import com.poe.poe2buildassistant.application.port.out.CatalogEditorPort;
 import com.poe.poe2buildassistant.application.port.out.CatalogRepositoryPort;
 import com.poe.poe2buildassistant.application.service.GetCatalogOptionsService;
 import com.poe.poe2buildassistant.domain.CatalogFixtures;
@@ -182,6 +183,8 @@ class CatalogOptionsChaosTest {
 
         @LocalServerPort private int port;
         @MockitoBean private CatalogRepositoryPort catalogs;
+        /** O mock acima substitui o adaptador, que também é o editor do catálogo (card #6). */
+        @MockitoBean private CatalogEditorPort editor;
 
         @Test
         @DisplayName("falha inesperada vira ProblemDetail em pt-BR, sem detalhes internos e sem cache")

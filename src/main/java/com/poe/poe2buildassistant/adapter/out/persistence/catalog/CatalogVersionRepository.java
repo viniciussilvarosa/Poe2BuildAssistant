@@ -7,4 +7,6 @@ import org.springframework.data.repository.Repository;
 interface CatalogVersionRepository extends Repository<CatalogVersionEntity, Long> {
 
     Optional<CatalogVersionEntity> findByStatus(CatalogVersion.Status status);
+
+    Optional<CatalogVersionEntity> findById(Long id);
 }

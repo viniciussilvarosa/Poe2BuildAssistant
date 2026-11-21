@@ -98,4 +98,36 @@ class CatalogSeedTest {
         assertThat(names).allSatisfy(n -> assertThat(n).isEqualTo(n.strip()));
         assertThat(names.stream().map(CatalogNames::normalize).distinct()).hasSameSizeAs(names);
     }
+
+    @Test
+    @DisplayName("notables da árvore oficial (card #6) estão no catálogo publicado, com descrição")
+    void notablesDaArvoreOficial() {
+        assertThat(catalog.notables()).hasSizeGreaterThan(900);
+        assertThat(catalog.findNotable("Her Final Bite"))
+                .hasValueSatisfying(n -> assertThat(n.description()).contains("Culling Strike").doesNotContain("["));
+        unicos(catalog.notables(), n -> n.name());
+    }
+
+    @Test
+    @DisplayName("a build do protótipo passa no validador com o catálogo real")
+    void prototipoPassaNoValidador() {
+        var draft = new com.poe.poe2buildassistant.domain.build.GeneratedBuildDraft(
+                "Arqueiro de gelo.",
+                "Ice Shot congela e Pierce atravessa.",
+                List.of(),
+                "Ranger",
+                "Deadeye",
+                "Bow",
+                "Ice Shot",
+                List.of("Pierce I"),
+                new com.poe.poe2buildassistant.domain.build.GeneratedBuildDraft.PassiveDirection(
+                        "Lado da Ranger.", catalog.notables().stream().limit(5).map(n -> n.name()).toList()),
+                new com.poe.poe2buildassistant.domain.build.GeneratedBuildDraft.GearPriorities(List.of(), List.of(), List.of()),
+                List.of());
+
+        var request = new com.poe.poe2buildassistant.domain.build.BuildRequest(
+                "arqueiro de gelo", com.poe.poe2buildassistant.domain.build.Constraints.none());
+
+        assertThat(new com.poe.poe2buildassistant.domain.build.BuildValidator().validate(draft, catalog, request)).isEmpty();
+    }
 }

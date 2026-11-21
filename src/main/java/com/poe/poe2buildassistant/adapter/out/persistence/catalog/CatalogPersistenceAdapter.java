@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 
+import com.poe.poe2buildassistant.application.port.out.CatalogEditorPort;
 import com.poe.poe2buildassistant.application.port.out.CatalogRepositoryPort;
 import com.poe.poe2buildassistant.domain.catalog.Ascendancy;
 import com.poe.poe2buildassistant.domain.catalog.Catalog;
@@ -15,13 +16,17 @@ import com.poe.poe2buildassistant.domain.catalog.SkillGem;
 import com.poe.poe2buildassistant.domain.catalog.SupportGem;
 import com.poe.poe2buildassistant.domain.catalog.WeaponType;
 import com.poe.poe2buildassistant.domain.shared.CatalogNotPublished;
+import com.poe.poe2buildassistant.domain.shared.CatalogVersionNotEditable;
+import com.poe.poe2buildassistant.domain.shared.CatalogVersionNotFound;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Component
 @Transactional(readOnly = true)
-class CatalogPersistenceAdapter implements CatalogRepositoryPort {
+class CatalogPersistenceAdapter implements CatalogRepositoryPort, CatalogEditorPort {
 
     private static final Logger log = LoggerFactory.getLogger(CatalogPersistenceAdapter.class);
 
@@ -44,6 +49,7 @@ class CatalogPersistenceAdapter implements CatalogRepositoryPort {
     private final SupportGemRepository supportGems;
     private final PassiveNotableRepository notables;
     private final PlaystyleRepository playstyles;
+    private final JdbcClient jdbc;
 
     /** Versão cuja carga já foi logada: o log de INFO sai só na primeira carga de cada versão. */
     private final AtomicLong lastLoggedVersion = new AtomicLong(-1);
@@ -57,7 +63,8 @@ class CatalogPersistenceAdapter implements CatalogRepositoryPort {
             SkillGemWeaponTypeRepository skillGemWeaponTypes,
             SupportGemRepository supportGems,
             PassiveNotableRepository notables,
-            PlaystyleRepository playstyles) {
+            PlaystyleRepository playstyles,
+            JdbcClient jdbc) {
         this.versions = versions;
         this.classes = classes;
         this.ascendancies = ascendancies;
@@ -67,6 +74,7 @@ class CatalogPersistenceAdapter implements CatalogRepositoryPort {
         this.supportGems = supportGems;
         this.notables = notables;
         this.playstyles = playstyles;
+        this.jdbc = jdbc;
     }
 
     @Override
@@ -104,6 +112,37 @@ class CatalogPersistenceAdapter implements CatalogRepositoryPort {
         Catalog catalog = builder.build();
         logFirstLoad(catalog);
         return catalog;
+    }
+
+    @Override
+    public Optional<CatalogVersion> findVersion(long versionId) {
+        return versions.findById(versionId).map(v -> new CatalogVersion(v.getId(), v.getPatch(), v.getStatus()));
+    }
+
+    /**
+     * Escrita direta em SQL: as entidades do catálogo são só de leitura. O {@code FOR UPDATE} trava a
+     * versão até o fim da transação: uma publicação concorrente espera, e uma publicação que veio
+     * antes é vista aqui (chaos N2).
+     */
+    @Override
+    @Transactional
+    public void replaceNotables(long versionId, List<PassiveNotable> replacement) {
+        Map<String, Object> version = jdbc.sql("SELECT patch, status FROM catalog_version WHERE id = ? FOR UPDATE")
+                .param(versionId)
+                .query()
+                .listOfRows()
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new CatalogVersionNotFound(versionId));
+        if (CatalogVersion.Status.PUBLISHED.name().equals(version.get("status"))) {
+            throw new CatalogVersionNotEditable((String) version.get("patch"));
+        }
+        jdbc.sql("DELETE FROM passive_notable WHERE catalog_version_id = ?").param(versionId).update();
+        for (PassiveNotable n : replacement) {
+            jdbc.sql("INSERT INTO passive_notable (catalog_version_id, name, description) VALUES (?, ?, ?)")
+                    .params(versionId, n.name(), n.description())
+                    .update();
+        }
     }
 
     private static <E extends CatalogItemEntity, T> Map<Long, T> byId(List<E> entities, Function<E, T> toDomain) {

@@ -15,6 +15,9 @@ public final class CatalogNames {
     /** Apóstrofos tipográficos que o LLM pode devolver no lugar do reto (Sniper’s Mark; chaos S1d). */
     private static final Pattern APOSTROPHES = Pattern.compile("[\u2018\u2019\u02BC\u00B4`]");
 
+    /** Tamanho máximo de um nome no catálogo (VARCHAR(120) no banco). */
+    public static final int MAX_LENGTH = 120;
+
     private CatalogNames() {}
 
     /** Chave de comparação de um nome do jogo. {@code null} vira string vazia. */
