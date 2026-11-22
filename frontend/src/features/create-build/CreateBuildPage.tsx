@@ -10,8 +10,16 @@ const MAX_CONCEPT = 500;
 /** O catálogo não distingue a mão: escudo e broquel vão num grupo próprio (QA-10). */
 const OFF_HAND = new Set(["Shield", "Buckler"]);
 
-/** Sem acento e em minúsculas: "SHÓT" acha "Shot". */
-const normalize = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+/**
+ * Sem acento e em minúsculas ("SHÓT" acha "Shot"), com o apóstrofo curvo que o teclado do celular
+ * põe sozinho igual ao reto ("alchemist’s" acha "Alchemist's Boon"; chaos do PR #95).
+ */
+const normalize = (text: string) =>
+  text
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[\u2018\u2019\u02BC\u0060\u00B4]/g, "'")
+    .toLowerCase();
 
 type Group = { label?: string; names: string[] };
 
@@ -117,7 +125,8 @@ export function CreateBuildPage() {
   const skillNames = skills
     .map((g) => g.name)
     .filter((n) => !searching || matches.includes(n) || n === choices.mainSkill);
-  const searchStatus = !searching
+  // Sem catálogo (carregando ou com erro) não há o que dizer: "Nenhuma habilidade" seria falso.
+  const searchStatus = !searching || !options
     ? ""
     : matches.length === 0
       ? `Nenhuma habilidade com “${skillQuery.trim()}”`
@@ -134,7 +143,9 @@ export function CreateBuildPage() {
   }
 
   function searchKey(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== "Enter") return;
+    // Busca vazia não tem resultado: o Enter volta a ser o do formulário. O Enter que fecha uma
+    // composição de texto (IME) também não é escolha (chaos do PR #95).
+    if (event.key !== "Enter" || !searching || event.nativeEvent.isComposing || event.keyCode === 229) return;
     event.preventDefault();
     if (matches.length > 0) choose("mainSkill", matches[0]);
   }

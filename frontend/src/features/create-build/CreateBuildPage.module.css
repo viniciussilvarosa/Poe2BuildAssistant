@@ -130,6 +130,8 @@
    aria-live anunciar a próxima mudança. */
 .buscaStatus {
   margin: 0;
+  /* O aviso repete o termo: sem isto, um termo longo sem espaço alargava a página (chaos do PR #95). */
+  overflow-wrap: anywhere;
   font-size: var(--texto-pequeno);
   color: var(--cinza-brasa);
 }
