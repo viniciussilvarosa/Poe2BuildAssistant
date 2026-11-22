@@ -4,6 +4,7 @@ import com.poe.poe2buildassistant.domain.build.BuildRequest;
 import com.poe.poe2buildassistant.domain.build.BuildViolation;
 import com.poe.poe2buildassistant.domain.build.CatalogSlice;
 import com.poe.poe2buildassistant.domain.build.GeneratedBuildDraft;
+import java.time.Instant;
 import java.util.List;
 
 /** Geração de um rascunho de build por um LLM. O rascunho ainda precisa passar pelo BuildValidator. */
@@ -16,4 +17,13 @@ public interface BuildGeneratorPort {
      * @throws com.poe.poe2buildassistant.domain.shared.GenerationFailed resposta inutilizável
      */
     GeneratedBuildDraft generate(BuildRequest request, CatalogSlice slice, List<BuildViolation> feedback);
+
+    /**
+     * Igual a {@link #generate(BuildRequest, CatalogSlice, List)}, mas sem passar do prazo da geração:
+     * nenhuma chamada ao provedor espera além de {@code deadline}. Quem não sabe respeitar prazo ignora.
+     */
+    default GeneratedBuildDraft generate(
+            BuildRequest request, CatalogSlice slice, List<BuildViolation> feedback, Instant deadline) {
+        return generate(request, slice, feedback);
+    }
 }

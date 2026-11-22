@@ -65,6 +65,8 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
             new BeanOutputConverter<>(GeneratedBuildResponse.class);
     private final String systemPrompt;
     private final PromptTemplate userTemplate;
+    /** Abaixo disso não vale abrir a chamada de um modelo reserva: não daria tempo de responder. */
+    private static final Duration MIN_FALLBACK_TIME = Duration.ofSeconds(2);
     /** Chave do disjuntor do modelo principal (o configurado em spring.ai.google.genai.chat.options.model). */
     private static final String PRIMARY = "primary";
     /**
@@ -83,6 +85,12 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
 
     @Override
     public GeneratedBuildDraft generate(BuildRequest request, CatalogSlice slice, List<BuildViolation> feedback) {
+        return generate(request, slice, feedback, Instant.MAX);
+    }
+
+    @Override
+    public GeneratedBuildDraft generate(
+            BuildRequest request, CatalogSlice slice, List<BuildViolation> feedback, Instant deadline) {
         Instant until = blockedUntil.getOrDefault(PRIMARY, Instant.MIN);
         if (clock.now().isBefore(until)) {
             log.atInfo().setMessage("ai.provider.short_circuit").addKeyValue("retryAt", until).log();
@@ -90,7 +98,7 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
         }
         Prompt prompt = new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userPrompt(request, slice, feedback))));
         long start = System.nanoTime();
-        ChatResponse response = callWithFallback(prompt);
+        ChatResponse response = callWithFallback(prompt, deadline);
         var metadata = response.getMetadata();
         var usage = metadata == null ? null : metadata.getUsage();
         log.atInfo()
@@ -106,31 +114,48 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
 
     /**
      * Chama o modelo principal e, se ele estiver sobrecarregado (5xx) ou estourar o timeout, repete
-     * a mesma chamada no modelo reserva ({@code app.ai.fallback-model}), dentro da mesma tentativa
-     * (#88). Cota (429), configuração e resposta malformada não trocam de modelo.
+     * a mesma chamada nos modelos reserva ({@code app.ai.fallback-models}), em ordem, dentro da mesma
+     * tentativa (#88). Cota (429) do principal, configuração e resposta malformada não trocam de modelo.
      */
-    private ChatResponse callWithFallback(Prompt prompt) {
+    private ChatResponse callWithFallback(Prompt prompt, Instant deadline) {
+        Duration first = budget(deadline);
+        if (first.isZero()) {
+            log.atWarn().setMessage("ai.generation.deadline").addKeyValue("model", PRIMARY).log();
+            throw new ProviderUnavailable(Optional.empty());
+        }
         try {
-            return call(prompt, PRIMARY);
+            return call(prompt, PRIMARY, first);
         } catch (Overloaded primary) {
-            String fallback = properties.fallbackModel();
-            if (fallback == null || fallback.isBlank() || isBlocked(fallback)) {
-                // Sem reserva, ou reserva ainda dentro do 429 dele: termina sem gastar outra chamada.
-                throw primary.unavailable;
+            String from = PRIMARY;
+            String reason = primary.reason;
+            for (String fallback : properties.activeFallbacks()) {
+                if (isBlocked(fallback)) {
+                    continue; // ainda dentro do 429 deste reserva: nem chama
+                }
+                if (remaining(deadline).compareTo(MIN_FALLBACK_TIME) < 0) {
+                    // O prazo da geração (5 min) acabou: não adianta abrir outra chamada.
+                    log.atWarn().setMessage("ai.generation.deadline").addKeyValue("model", fallback).log();
+                    break;
+                }
+                log.atWarn()
+                        .setMessage("ai.provider.fallback")
+                        .addKeyValue("from", from)
+                        .addKeyValue("to", fallback)
+                        .addKeyValue("reason", reason)
+                        .log();
+                try {
+                    return call(new Prompt(prompt.getInstructions(), ChatOptions.builder().model(fallback).build()), fallback, budget(deadline));
+                } catch (Overloaded busy) {
+                    reason = busy.reason;
+                } catch (ProviderUnavailable down) {
+                    // Cota ou configuração deste reserva: o retryAt dele fica no disjuntor dele e não vale
+                    // para o principal; segue para o próximo reserva.
+                    reason = "unavailable";
+                }
+                from = fallback;
             }
-            log.atWarn()
-                    .setMessage("ai.provider.fallback")
-                    .addKeyValue("from", "primary")
-                    .addKeyValue("to", fallback)
-                    .addKeyValue("reason", primary.reason)
-                    .log();
-            try {
-                return call(new Prompt(prompt.getInstructions(), ChatOptions.builder().model(fallback).build()), fallback);
-            } catch (Overloaded | ProviderUnavailable fallbackDown) {
-                // O erro é o do principal (sobrecarga, sem horário): o retryAt de um 429 do reserva não
-                // vale para o principal e já ficou no disjuntor do reserva.
-                throw primary.unavailable;
-            }
+            // O erro é o do principal (sobrecarga, sem horário de retorno).
+            throw primary.unavailable;
         }
     }
 
@@ -151,14 +176,26 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
     }
 
     /** @param breakerKey disjuntor que um 429 desta chamada alimenta: o do principal ou o do reserva */
-    private ChatResponse call(Prompt prompt, String breakerKey) {
+    /** Quanto ainda resta do prazo da geração (nunca negativo). */
+    private Duration remaining(Instant deadline) {
+        Duration left = Duration.between(clock.now(), deadline);
+        return left.isNegative() ? Duration.ZERO : left;
+    }
+
+    /** Tempo desta chamada: o timeout por modelo, ou o que resta do prazo, o que for menor. */
+    private Duration budget(Instant deadline) {
+        Duration left = remaining(deadline);
+        return left.compareTo(properties.timeout()) < 0 ? left : properties.timeout();
+    }
+
+    private ChatResponse call(Prompt prompt, String breakerKey, Duration timeout) {
         // Virtual thread: a espera pela rede não ocupa o pool comum. O timeout corta a espera do
         // usuário e INTERROMPE a chamada, para ela não seguir gastando cota (G5); o cliente do
         // Gemini não tem timeout configurável.
         FutureTask<ChatResponse> task = new FutureTask<>(() -> client.prompt(prompt).call().chatResponse());
         Thread.ofVirtual().name("gemini-call").start(task);
         try {
-            return task.get(properties.timeout().toMillis(), TimeUnit.MILLISECONDS);
+            return task.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
             task.cancel(true);
             log.atWarn().setMessage("ai.provider.unavailable").addKeyValue("status", "timeout").log();

@@ -1,7 +1,6 @@
 package com.poe.poe2buildassistant.config;
 
 import com.poe.poe2buildassistant.adapter.in.web.build.GenerationStreamTimeout;
-import com.poe.poe2buildassistant.adapter.out.ai.AiProperties;
 import com.poe.poe2buildassistant.application.service.GenerationSettings;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -24,15 +23,18 @@ class GenerationConfig {
             @DefaultValue("1000") int sliceMaxItems,
             @DefaultValue("5m") Duration maxDuration) {}
 
-    /** Limite da geração inteira (5 min), conferido contra o pior caso com o modelo reserva (#88). */
+    /** Limite da geração inteira (5 min): vira o timeout do stream SSE (#88). */
     @Bean
-    GenerationStreamTimeout generationStreamTimeout(GenerationProperties generation, AiProperties ai) {
-        int callsPerAttempt = ai.fallbackModel().isBlank() ? 1 : 2;
-        return GenerationStreamTimeout.of(generation.maxDuration(), ai.timeout(), generation.maxAttempts(), callsPerAttempt);
+    GenerationStreamTimeout generationStreamTimeout(GenerationProperties generation) {
+        return GenerationStreamTimeout.of(generation.maxDuration());
     }
 
     @Bean
     GenerationSettings generationSettings(GenerationProperties properties) {
-        return new GenerationSettings(properties.maxAttempts(), properties.sliceMaxItems());
+        // As tentativas param no prazo (limite menos a folga de gravar); cada chamada ganha o que resta.
+        return new GenerationSettings(
+                properties.maxAttempts(),
+                properties.sliceMaxItems(),
+                GenerationStreamTimeout.of(properties.maxDuration()).attemptsBudget());
     }
 }

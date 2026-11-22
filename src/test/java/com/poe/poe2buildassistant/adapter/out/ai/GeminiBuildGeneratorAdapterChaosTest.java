@@ -67,7 +67,7 @@ class GeminiBuildGeneratorAdapterChaosTest {
     }
 
     private static GeminiBuildGeneratorAdapter adapter(ChatModel model, Duration timeout) {
-        return new GeminiBuildGeneratorAdapter(ChatClient.builder(model), () -> NOW, new AiProperties(timeout, ""));
+        return new GeminiBuildGeneratorAdapter(ChatClient.builder(model), () -> NOW, new AiProperties(timeout, List.of()));
     }
 
     private static GeminiBuildGeneratorAdapter failingWith(RuntimeException e) {

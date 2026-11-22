@@ -10,27 +10,25 @@ import org.junit.jupiter.api.Test;
 class GenerationStreamTimeoutTest {
 
     @Test
-    @DisplayName("a geração tem o limite configurado (5 min), que cobre o pior caso com o modelo reserva (#88)")
+    @DisplayName("a geração tem o limite configurado (5 min) e as tentativas usam 5 min - 30 s de prazo")
     void limiteConfigurado() {
-        var timeout = GenerationStreamTimeout.of(Duration.ofMinutes(5), Duration.ofSeconds(60), 2, 2);
+        var timeout = GenerationStreamTimeout.of(Duration.ofMinutes(5));
 
         assertThat(timeout.value()).isEqualTo(Duration.ofMinutes(5));
+        assertThat(timeout.attemptsBudget()).isEqualTo(Duration.ofSeconds(270));
     }
 
     @Test
-    @DisplayName("limite menor que o pior caso (timeout x tentativas x modelos + folga) recusa subir (R-01)")
+    @DisplayName("limite que não deixa a folga de gravar recusa subir (R-01)")
     void limiteCurtoRecusado() {
-        // 120 s x 2 tentativas x 2 modelos + 30 s = 510 s > 300 s: o stream fecharia antes da geração.
-        assertThatThrownBy(() -> GenerationStreamTimeout.of(Duration.ofMinutes(5), Duration.ofSeconds(120), 2, 2))
+        assertThatThrownBy(() -> GenerationStreamTimeout.of(Duration.ofSeconds(59)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("app.generation.max-duration");
     }
 
     @Test
-    @DisplayName("sem modelo reserva, o pior caso conta uma chamada por tentativa")
-    void semReserva() {
-        var timeout = GenerationStreamTimeout.of(Duration.ofSeconds(150), Duration.ofSeconds(60), 2, 1);
-
-        assertThat(timeout.value()).isEqualTo(Duration.ofSeconds(150));
+    @DisplayName("o menor limite aceito é o dobro da folga")
+    void menorLimite() {
+        assertThat(GenerationStreamTimeout.of(Duration.ofSeconds(60)).attemptsBudget()).isEqualTo(Duration.ofSeconds(30));
     }
 }

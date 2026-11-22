@@ -27,7 +27,7 @@ Para exigir o CI verde antes do merge: *Settings → Branches → Branch protect
 
 Variável `APP_PUBLIC_URL` = o endereço oficial acima: o Cloud Run também publica o serviço em `https://poe2buildassistant-qo5it56ita-uc.a.run.app`, e o app redireciona esse endereço para o oficial, onde o login com Google funciona.
 
-Modelo de IA: `gemini-3.6-flash`, com `gemini-3.5-flash` como reserva (`app.ai.fallback-model`) quando o principal responde 503 ou estoura o timeout. O evento `ai.provider.fallback` no log mostra quando o reserva entrou.
+Modelo de IA: `gemini-3.8-flash`, com `gemini-3.6-flash` e depois `gemini-3.5-flash` como reservas (`app.ai.fallback-models`), quando o anterior responde 503 ou 429 ou passa de 180 s sem responder. A geração inteira continua limitada a 5 min: cada modelo recebe 180 s ou o que resta do prazo, o que for menor. O evento `ai.provider.fallback` no log mostra cada troca. A chave está no Tier 1 (faturamento ativo no projeto `gen-lang-client-0467331933`).
 
 Configuração do serviço: 1 GiB e 1 vCPU, timeout de **330 s** (`--timeout=330`; a geração pode levar até 5 min, `app.generation.max-duration`, e o Cloud Run precisa esperar mais que isso), de 0 a **1** instância: a sessão de login fica na memória do processo (sem sessão compartilhada), então uma segunda instância faria o usuário perder o login ou a volta do Google cair em outra instância. Para escalar além de 1, primeiro mover a sessão para o banco (Spring Session JDBC). Com 0 instâncias, a primeira requisição depois de um tempo parado espera a subida do Java (~15 s).
 

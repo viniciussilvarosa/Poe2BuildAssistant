@@ -133,11 +133,18 @@ public class GenerateBuildService implements GenerateBuildUseCase {
             BuildRequest request, Requester requester, Catalog catalog, GenerationProgressPort progress, Instant start) {
         CatalogSlice slice = CatalogSlice.of(catalog, request, settings.sliceMaxItems());
         List<BuildViolation> feedback = List.of();
+        // Prazo de todas as tentativas juntas (5 min - folga para gravar): nenhuma tentativa nova começa
+        // depois dele, e o gerador corta a espera do provedor nele.
+        Instant deadline = start.plus(settings.timeBudget());
         for (int attempt = 1; attempt <= settings.maxAttempts(); attempt++) {
+            if (attempt > 1 && !clock.now().isBefore(deadline)) {
+                log.atWarn().setMessage("build.generation.deadline").addKeyValue("attempt", attempt).log();
+                break;
+            }
             progress.emit(GenerationStep.GENERATING);
             GeneratedBuildDraft draft;
             try {
-                draft = generator.generate(request, slice, feedback);
+                draft = generator.generate(request, slice, feedback, deadline);
             } catch (GenerationFailed e) {
                 log.atWarn().setMessage("build.generation.malformed_attempt").addKeyValue("attempt", attempt).log();
                 continue; // resposta inutilizável conta como tentativa; tenta de novo com o mesmo feedback

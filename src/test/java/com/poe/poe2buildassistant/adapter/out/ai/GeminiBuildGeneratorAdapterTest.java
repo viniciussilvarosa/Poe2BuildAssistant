@@ -52,7 +52,7 @@ class GeminiBuildGeneratorAdapterTest {
     }
 
     private GeminiBuildGeneratorAdapter adapter(ChatModel model) {
-        return new GeminiBuildGeneratorAdapter(ChatClient.builder(model), () -> now, new AiProperties(Duration.ofSeconds(5), ""));
+        return new GeminiBuildGeneratorAdapter(ChatClient.builder(model), () -> now, new AiProperties(Duration.ofSeconds(5), List.of()));
     }
 
     private String promptText() {
@@ -238,7 +238,7 @@ class GeminiBuildGeneratorAdapterTest {
             }
             return new ChatResponse(List.of(new Generation(new AssistantMessage("{}"))));
         };
-        var rapido = new GeminiBuildGeneratorAdapter(ChatClient.builder(lento), () -> NOW, new AiProperties(Duration.ofMillis(200), ""));
+        var rapido = new GeminiBuildGeneratorAdapter(ChatClient.builder(lento), () -> NOW, new AiProperties(Duration.ofMillis(200), List.of()));
 
         assertThatThrownBy(() -> rapido.generate(rangerBow, slice, List.of())).isInstanceOf(ProviderUnavailable.class);
     }

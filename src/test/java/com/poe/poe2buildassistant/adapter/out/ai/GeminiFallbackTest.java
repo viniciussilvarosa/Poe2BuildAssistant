@@ -66,7 +66,7 @@ class GeminiFallbackTest {
     }
 
     private GeminiBuildGeneratorAdapter adapter(ChatModel model, String reserva, Duration timeout) {
-        return new GeminiBuildGeneratorAdapter(ChatClient.builder(model), () -> NOW, new AiProperties(timeout, reserva));
+        return new GeminiBuildGeneratorAdapter(ChatClient.builder(model), () -> NOW, new AiProperties(timeout, List.of(reserva)));
     }
 
     private GeminiBuildGeneratorAdapter adapter(ChatModel model) {
@@ -167,6 +167,43 @@ class GeminiFallbackTest {
 
         assertThatThrownBy(() -> adapter.generate(pedido, slice, List.of())).isInstanceOf(ProviderUnavailable.class);
         assertThat(chamadas).as("o principal é tentado; o reserva bloqueado, não").containsExactly(PRINCIPAL);
+    }
+
+    @Test
+    @DisplayName("cadeia de reservas: 3.8 e 3.6 sobrecarregados, a build sai do 3.5, na ordem configurada")
+    void cadeiaDeReservas() throws IOException {
+        String json = valida();
+        var adapter = new GeminiBuildGeneratorAdapter(ChatClient.builder(modelo(nome -> {
+            if (!nome.equals("gemini-3.5-flash")) {
+                throw api(503, "UNAVAILABLE", "high demand");
+            }
+            return resposta(json);
+        })), () -> NOW, new AiProperties(Duration.ofSeconds(5), List.of("gemini-3.6-flash", " ", "gemini-3.5-flash")));
+
+        assertThat(adapter.generate(pedido, slice, List.of()).mainSkill()).isEqualTo("Ice Shot");
+        assertThat(chamadas).containsExactly(PRINCIPAL, "gemini-3.6-flash", "gemini-3.5-flash");
+    }
+
+    @Test
+    @DisplayName("reserva sem cota é pulado: segue para o próximo, e na geração seguinte nem é chamado")
+    void reservaSemCotaEhPulado() throws IOException {
+        String json = valida();
+        var adapter = new GeminiBuildGeneratorAdapter(ChatClient.builder(modelo(nome -> {
+            if (nome.equals("gemini-3.6-flash")) {
+                throw api(429, "RESOURCE_EXHAUSTED", "{\"retryDelay\": \"3600s\"}");
+            }
+            if (nome.equals(PRINCIPAL)) {
+                throw api(503, "UNAVAILABLE", "high demand");
+            }
+            return resposta(json);
+        })), () -> NOW, new AiProperties(Duration.ofSeconds(5), List.of("gemini-3.6-flash", "gemini-3.5-flash")));
+
+        assertThat(adapter.generate(pedido, slice, List.of()).mainSkill()).isEqualTo("Ice Shot");
+        assertThat(chamadas).containsExactly(PRINCIPAL, "gemini-3.6-flash", "gemini-3.5-flash");
+        chamadas.clear();
+
+        assertThat(adapter.generate(pedido, slice, List.of()).mainSkill()).isEqualTo("Ice Shot");
+        assertThat(chamadas).as("3.6 bloqueado pelo próprio 429").containsExactly(PRINCIPAL, "gemini-3.5-flash");
     }
 
     @Test

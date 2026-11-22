@@ -46,7 +46,7 @@ class MyBuildsIntegrationTest {
 
     private Build generateAs(Requester requester) {
         List<String> notables = catalogs.loadPublished().notables().stream().limit(5).map(n -> n.name()).toList();
-        when(generator.generate(any(), any(), any())).thenReturn(new GeneratedBuildDraft(
+        when(generator.generate(any(), any(), any(), any())).thenReturn(new GeneratedBuildDraft(
                 "Arqueiro de gelo.",
                 "Ice Shot congela e Pierce atravessa.",
                 List.of(),
