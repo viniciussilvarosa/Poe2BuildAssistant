@@ -7,9 +7,11 @@ import { SessionProvider, useSession } from "./session";
 /**
  * Toda página carregada do zero (endereço digitado, link externo, volta do login) tem a chave
  * "default": sem separar pelo caminho, uma herdava a rolagem salva pela outra (chaos do PR #93).
- * Pelo caminho, recarregar a mesma página ainda volta à mesma posição.
+ * Pelo caminho, recarregar a mesma página ainda volta à mesma posição. O hash entra na chave: abrir
+ * /#como-funciona do zero vai à seção, não à posição salva da home (#96).
  */
-const scrollKey = (location: Location) => (location.key === "default" ? `default:${location.pathname}` : location.key);
+const scrollKey = (location: Location) =>
+  location.key === "default" ? `default:${location.pathname}${location.hash}` : location.key;
 
 export function Layout() {
   return (
@@ -41,7 +43,9 @@ function Page() {
           <NavLink to="/guia">Guia rápido</NavLink>
           <NavLink to="/minhas-builds">Minhas builds</NavLink>
           {me?.role === "ADMIN" && <NavLink to="/admin">Admin</NavLink>}
-          <a href="/#como-funciona">Como funciona</a>
+          {/* Link do router, não <a>: a home é desenhada antes de o ScrollRestoration rolar até a
+              seção. Com <a>, o app recarregava e a âncora ainda não existia (#96). */}
+          <Link to="/#como-funciona">Como funciona</Link>
           <AuthMenu className={styles.entrar} />
         </nav>
       </header>
