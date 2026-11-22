@@ -84,9 +84,8 @@ class HeadMethodChaosTest {
     @DisplayName("H3: cabeçalhos de segurança também no HEAD")
     class Cabecalhos {
 
-        // CHAOS: KILLED no PR #91. Em / e nas rotas do SPA (forward para o index.html), o HEAD sai sem
-        // nenhum cabeçalho do Spring Security (CSP, X-Frame-Options, nosniff, Cache-Control no-store):
-        // o forward fecha a resposta sem escrita de corpo, e o HeaderWriterFilter só escreve no commit.
+        // KILLED no PR #91 antes da correção: em / e nas rotas do SPA (forward para o index.html), o HEAD
+        // saía sem nenhum cabeçalho do Spring Security, que só os escrevia no commit da resposta.
         @ParameterizedTest(name = "HEAD {0} sai com CSP, X-Frame-Options, nosniff e no-store")
         @ValueSource(strings = {"/", "/criar", "/qualquer-coisa"})
         void cabecalhos(String path) throws Exception {
@@ -96,6 +95,25 @@ class HeadMethodChaosTest {
             assertThat(h.firstValue("X-Frame-Options")).contains("DENY");
             assertThat(h.firstValue("X-Content-Type-Options")).contains("nosniff");
             assertThat(h.firstValue("Cache-Control")).hasValueSatisfying(cc -> assertThat(cc).contains("no-store"));
+        }
+    }
+
+    @Nested
+    @DisplayName("H3b: cabeçalhos escritos cedo não estragam o cache")
+    class CacheIntacto {
+
+        @ParameterizedTest(name = "{0} no asset do Vite: cache longo, sem Pragma no-cache nem Expires 0")
+        @ValueSource(strings = {"GET", "HEAD"})
+        void assetContinuaCacheavel(String method) throws Exception {
+            String index = send("GET", "/").body();
+            String script = index.replaceAll("(?s).*<script type=\"module\" crossorigin src=\"([^\"]+)\".*", "$1");
+
+            var h = send(method, script).headers();
+
+            assertThat(h.firstValue("Cache-Control")).hasValueSatisfying(cc -> assertThat(cc).contains("max-age=31536000").doesNotContain("no-store"));
+            assertThat(h.firstValue("Pragma").orElse("")).doesNotContain("no-cache");
+            assertThat(h.firstValue("Expires").orElse("")).isNotEqualTo("0");
+            assertThat(h.firstValue("X-Content-Type-Options")).contains("nosniff");
         }
     }
 
