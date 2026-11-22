@@ -106,31 +106,38 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
 
     /**
      * Chama o modelo principal e, se ele estiver sobrecarregado (5xx) ou estourar o timeout, repete
-     * a mesma chamada no modelo reserva ({@code app.ai.fallback-model}), dentro da mesma tentativa
-     * (#88). Cota (429), configuração e resposta malformada não trocam de modelo.
+     * a mesma chamada nos modelos reserva ({@code app.ai.fallback-models}), em ordem, dentro da mesma
+     * tentativa (#88). Cota (429) do principal, configuração e resposta malformada não trocam de modelo.
      */
     private ChatResponse callWithFallback(Prompt prompt) {
         try {
             return call(prompt, PRIMARY);
         } catch (Overloaded primary) {
-            String fallback = properties.fallbackModel();
-            if (fallback == null || fallback.isBlank() || isBlocked(fallback)) {
-                // Sem reserva, ou reserva ainda dentro do 429 dele: termina sem gastar outra chamada.
-                throw primary.unavailable;
+            String from = PRIMARY;
+            String reason = primary.reason;
+            for (String fallback : properties.activeFallbacks()) {
+                if (isBlocked(fallback)) {
+                    continue; // ainda dentro do 429 deste reserva: nem chama
+                }
+                log.atWarn()
+                        .setMessage("ai.provider.fallback")
+                        .addKeyValue("from", from)
+                        .addKeyValue("to", fallback)
+                        .addKeyValue("reason", reason)
+                        .log();
+                try {
+                    return call(new Prompt(prompt.getInstructions(), ChatOptions.builder().model(fallback).build()), fallback);
+                } catch (Overloaded busy) {
+                    reason = busy.reason;
+                } catch (ProviderUnavailable down) {
+                    // Cota ou configuração deste reserva: o retryAt dele fica no disjuntor dele e não vale
+                    // para o principal; segue para o próximo reserva.
+                    reason = "unavailable";
+                }
+                from = fallback;
             }
-            log.atWarn()
-                    .setMessage("ai.provider.fallback")
-                    .addKeyValue("from", "primary")
-                    .addKeyValue("to", fallback)
-                    .addKeyValue("reason", primary.reason)
-                    .log();
-            try {
-                return call(new Prompt(prompt.getInstructions(), ChatOptions.builder().model(fallback).build()), fallback);
-            } catch (Overloaded | ProviderUnavailable fallbackDown) {
-                // O erro é o do principal (sobrecarga, sem horário): o retryAt de um 429 do reserva não
-                // vale para o principal e já ficou no disjuntor do reserva.
-                throw primary.unavailable;
-            }
+            // O erro é o do principal (sobrecarga, sem horário de retorno).
+            throw primary.unavailable;
         }
     }
 

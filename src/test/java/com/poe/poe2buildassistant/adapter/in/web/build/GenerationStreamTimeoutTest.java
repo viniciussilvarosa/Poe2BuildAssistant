@@ -18,6 +18,13 @@ class GenerationStreamTimeoutTest {
     }
 
     @Test
+    @DisplayName("configuração de produção: 45 s x 2 tentativas x 3 modelos + 30 s cabe exatamente em 5 min")
+    void producaoComTresModelos() {
+        assertThat(GenerationStreamTimeout.of(Duration.ofMinutes(5), Duration.ofSeconds(45), 2, 3).value())
+                .isEqualTo(Duration.ofMinutes(5));
+    }
+
+    @Test
     @DisplayName("limite menor que o pior caso (timeout x tentativas x modelos + folga) recusa subir (R-01)")
     void limiteCurtoRecusado() {
         // 120 s x 2 tentativas x 2 modelos + 30 s = 510 s > 300 s: o stream fecharia antes da geração.

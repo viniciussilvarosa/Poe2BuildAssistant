@@ -24,10 +24,10 @@ class GenerationConfig {
             @DefaultValue("1000") int sliceMaxItems,
             @DefaultValue("5m") Duration maxDuration) {}
 
-    /** Limite da geração inteira (5 min), conferido contra o pior caso com o modelo reserva (#88). */
+    /** Limite da geração inteira (5 min), conferido contra o pior caso com todos os modelos reserva (#88). */
     @Bean
     GenerationStreamTimeout generationStreamTimeout(GenerationProperties generation, AiProperties ai) {
-        int callsPerAttempt = ai.fallbackModel().isBlank() ? 1 : 2;
+        int callsPerAttempt = 1 + ai.activeFallbacks().size();
         return GenerationStreamTimeout.of(generation.maxDuration(), ai.timeout(), generation.maxAttempts(), callsPerAttempt);
     }
 
