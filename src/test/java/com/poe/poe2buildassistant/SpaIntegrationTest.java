@@ -92,6 +92,40 @@ class SpaIntegrationTest {
         assertThat(r.headers().firstValue("Content-Security-Policy")).isPresent();
     }
 
+    private HttpResponse<String> head(String path) throws Exception {
+        return http.send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+                        .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    @ParameterizedTest(name = "HEAD {0} responde o mesmo status do GET, sem corpo")
+    @ValueSource(strings = {"/", "/criar", "/guia", "/favicon.svg", "/qualquer-coisa", "/api/health"})
+    @DisplayName("monitores e verificadores de links usam HEAD: as páginas públicas não podem responder 403 (#65)")
+    void headIgualAoGet(String path) throws Exception {
+        HttpResponse<String> head = head(path);
+
+        assertThat(head.statusCode()).isEqualTo(get(path).statusCode());
+        assertThat(head.body()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("HEAD num asset do Vite responde 200 (#65)")
+    void headEmAsset() throws Exception {
+        String index = get("/").body();
+        String script = index.replaceAll("(?s).*<script type=\"module\" crossorigin src=\"([^\"]+)\".*", "$1");
+
+        assertThat(head(script).statusCode()).isEqualTo(200);
+    }
+
+    @ParameterizedTest(name = "HEAD {0} sem login continua 401, como o GET")
+    @ValueSource(strings = {"/api/me", "/api/me/builds", "/api/admin/catalog/drafts/current"})
+    @DisplayName("liberar HEAD nas páginas públicas não abre a API protegida (#65)")
+    void headNaoAbreApiProtegida(String path) throws Exception {
+        assertThat(head(path).statusCode()).isEqualTo(401).isEqualTo(get(path).statusCode());
+    }
+
     @Test
     @DisplayName("métodos que não são GET continuam negados fora da API")
     void naoGetContinuaNegado() throws Exception {
