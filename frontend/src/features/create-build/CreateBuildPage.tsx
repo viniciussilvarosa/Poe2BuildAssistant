@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 import type { BuildRequest } from "../../api/builds";
 import { getCatalogOptions, type CatalogOptions } from "../../api/catalog";
@@ -9,6 +9,9 @@ const AI_CHOOSES = "Deixar a IA escolher";
 const MAX_CONCEPT = 500;
 /** O catálogo não distingue a mão: escudo e broquel vão num grupo próprio (QA-10). */
 const OFF_HAND = new Set(["Shield", "Buckler"]);
+
+/** Sem acento e em minúsculas: "SHÓT" acha "Shot". */
+const normalize = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
 type Group = { label?: string; names: string[] };
 
@@ -105,10 +108,36 @@ export function CreateBuildPage() {
     { label: "Mão secundária", names: weaponNames.filter((n) => OFF_HAND.has(n)) },
   ].filter((g) => g.names.length > 0);
   // A busca só esconde opções: a escolha atual continua na lista, senão o select mentiria.
-  const query = skillQuery.trim().toLowerCase();
+  const matchesFor = (text: string) => {
+    const words = normalize(text).split(/\s+/).filter(Boolean);
+    return skills.map((g) => g.name).filter((n) => words.every((w) => normalize(n).includes(w)));
+  };
+  const searching = skillQuery.trim() !== "";
+  const matches = matchesFor(skillQuery);
   const skillNames = skills
     .map((g) => g.name)
-    .filter((n) => !query || n.toLowerCase().includes(query) || n === choices.mainSkill);
+    .filter((n) => !searching || matches.includes(n) || n === choices.mainSkill);
+  const searchStatus = !searching
+    ? ""
+    : matches.length === 0
+      ? `Nenhuma habilidade com “${skillQuery.trim()}”`
+      : matches.length === 1
+        ? "1 habilidade"
+        : `${matches.length} habilidades`;
+
+  // A busca escolhe de verdade (#94): sozinha no resultado, a habilidade vai para o select se nada foi
+  // escolhido ainda; Enter escolhe o primeiro resultado em vez de enviar o formulário.
+  function search(text: string) {
+    setSkillQuery(text);
+    const found = matchesFor(text);
+    if (text.trim() && found.length === 1 && !choices.mainSkill) choose("mainSkill", found[0]);
+  }
+
+  function searchKey(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    if (matches.length > 0) choose("mainSkill", matches[0]);
+  }
 
   function choose(selector: Selector, value: string) {
     setChoices((current) => {
@@ -167,15 +196,22 @@ export function CreateBuildPage() {
   );
 
   const skillSearch = (
-    <input
-      type="search"
-      className={styles.busca}
-      aria-label="Buscar habilidade"
-      aria-controls="mainSkill"
-      placeholder="Buscar habilidade"
-      value={skillQuery}
-      onChange={(e) => setSkillQuery(e.target.value)}
-    />
+    <>
+      <input
+        type="search"
+        className={styles.busca}
+        aria-label="Buscar habilidade"
+        aria-controls="mainSkill"
+        aria-describedby="busca-habilidade-status"
+        placeholder="Buscar habilidade"
+        value={skillQuery}
+        onChange={(e) => search(e.target.value)}
+        onKeyDown={searchKey}
+      />
+      <p id="busca-habilidade-status" className={styles.buscaStatus} aria-live="polite">
+        {searchStatus}
+      </p>
+    </>
   );
 
   return (

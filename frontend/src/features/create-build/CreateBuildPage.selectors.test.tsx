@@ -88,3 +88,83 @@ describe("seletores (QA-10)", () => {
     expect(screen.getByLabelText("Habilidade principal")).toHaveValue("Lightning Arrow");
   });
 });
+
+describe("busca de habilidade principal (#94, #69)", () => {
+  function abrirComRouter() {
+    const router = createMemoryRouter(routes, { initialEntries: ["/criar"] });
+    render(<RouterProvider router={router} />);
+    return router;
+  }
+
+  it("com um único resultado e nada escolhido, a habilidade fica selecionada", async () => {
+    await open();
+
+    await userEvent.type(screen.getByLabelText("Buscar habilidade"), "ice shot");
+
+    expect(screen.getByLabelText("Habilidade principal")).toHaveValue("Ice Shot");
+  });
+
+  it("Enter escolhe o primeiro resultado e não envia o formulário", async () => {
+    const router = abrirComRouter();
+    await screen.findByRole("option", { name: "Ranger" });
+    await userEvent.type(screen.getByLabelText(/Conceito do personagem/), "arqueiro de gelo");
+
+    await userEvent.type(screen.getByLabelText("Buscar habilidade"), "i{Enter}");
+
+    expect(router.state.location.pathname).toBe("/criar");
+    expect(screen.getByLabelText("Habilidade principal")).toHaveValue("Fireball");
+  });
+
+  it("Enter troca a escolha atual pelo primeiro resultado da busca", async () => {
+    await open();
+    const skill = screen.getByLabelText("Habilidade principal");
+    await userEvent.selectOptions(skill, "Ice Shot");
+
+    await userEvent.type(screen.getByLabelText("Buscar habilidade"), "lightning{Enter}");
+
+    expect(skill).toHaveValue("Lightning Arrow");
+  });
+
+  it("Enter sem resultado não envia o formulário nem apaga a escolha", async () => {
+    const router = abrirComRouter();
+    await screen.findByRole("option", { name: "Ranger" });
+    await userEvent.type(screen.getByLabelText(/Conceito do personagem/), "arqueiro de gelo");
+    await userEvent.selectOptions(screen.getByLabelText("Habilidade principal"), "Ice Shot");
+
+    await userEvent.type(screen.getByLabelText("Buscar habilidade"), "frostzzzz{Enter}");
+
+    expect(router.state.location.pathname).toBe("/criar");
+    expect(screen.getByLabelText("Habilidade principal")).toHaveValue("Ice Shot");
+  });
+
+  it("palavras em qualquer ordem, sem diferença de acento ou maiúsculas", async () => {
+    await open();
+
+    await userEvent.type(screen.getByLabelText("Buscar habilidade"), "SHÓT íce");
+
+    expect(names(screen.getByLabelText("Habilidade principal"))).toEqual(["Deixar a IA escolher", "Ice Shot"]);
+  });
+
+  it("busca sem resultado avisa, numa região aria-live ligada à busca", async () => {
+    await open();
+    const busca = screen.getByLabelText("Buscar habilidade");
+
+    await userEvent.type(busca, "frostzzzz");
+
+    const status = document.getElementById(busca.getAttribute("aria-describedby") ?? "");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(status).toHaveTextContent("Nenhuma habilidade com “frostzzzz”");
+  });
+
+  it("com resultados, a região mostra a quantidade; busca vazia não mostra mensagem", async () => {
+    await open();
+    const busca = screen.getByLabelText("Buscar habilidade");
+    const status = () => document.getElementById(busca.getAttribute("aria-describedby") ?? "");
+
+    expect(status()).toHaveTextContent(/^$/);
+    await userEvent.type(busca, "i");
+    expect(status()).toHaveTextContent("4 habilidades");
+    await userEvent.clear(busca);
+    expect(status()).toHaveTextContent(/^$/);
+  });
+});

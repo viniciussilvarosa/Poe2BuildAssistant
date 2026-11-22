@@ -125,3 +125,11 @@
   border: 1px solid var(--pedra-borda);
   border-radius: 2px;
 }
+
+/* Resultado da busca (#94): curto e discreto; vazio não ocupa espaço, mas continua no DOM para o
+   aria-live anunciar a próxima mudança. */
+.buscaStatus {
+  margin: 0;
+  font-size: var(--texto-pequeno);
+  color: var(--cinza-brasa);
+}
