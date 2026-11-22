@@ -150,6 +150,26 @@ class GeminiFallbackTest {
     }
 
     @Test
+    @DisplayName("reserva sem cota (429): o erro não leva o retryAt do reserva, e na próxima geração o reserva nem é chamado")
+    void reservaBloqueadoNaoEhChamado() {
+        var adapter = adapter(modelo(nome -> {
+            if (nome.equals(RESERVA)) {
+                throw api(429, "RESOURCE_EXHAUSTED", "{\"retryDelay\": \"3600s\"}");
+            }
+            throw api(503, "UNAVAILABLE", "high demand");
+        }));
+
+        assertThatThrownBy(() -> adapter.generate(pedido, slice, List.of()))
+                .isInstanceOfSatisfying(ProviderUnavailable.class, e -> assertThat(e.retryAt())
+                        .as("o 3.6 está só sobrecarregado: o horário do 429 do 3.5 não vale para ele")
+                        .isEmpty());
+        chamadas.clear();
+
+        assertThatThrownBy(() -> adapter.generate(pedido, slice, List.of())).isInstanceOf(ProviderUnavailable.class);
+        assertThat(chamadas).as("o principal é tentado; o reserva bloqueado, não").containsExactly(PRINCIPAL);
+    }
+
+    @Test
     @DisplayName("sem modelo reserva configurado, o 503 termina na primeira chamada")
     void semReserva() {
         var adapter = adapter(modelo(nome -> {

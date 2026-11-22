@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -64,8 +65,13 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
             new BeanOutputConverter<>(GeneratedBuildResponse.class);
     private final String systemPrompt;
     private final PromptTemplate userTemplate;
-    /** Até quando o provedor mandou esperar (429 com retryDelay): antes disso nem chama (#64). */
-    private volatile Instant blockedUntil = Instant.MIN;
+    /** Chave do disjuntor do modelo principal (o configurado em spring.ai.google.genai.chat.options.model). */
+    private static final String PRIMARY = "primary";
+    /**
+     * Até quando cada modelo mandou esperar (429 com retryDelay): antes disso, nem é chamado (#64).
+     * Por modelo (#89, caos C1): a cota esgotada do reserva não pode bloquear o principal.
+     */
+    private final Map<String, Instant> blockedUntil = new ConcurrentHashMap<>();
 
     GeminiBuildGeneratorAdapter(ChatClient.Builder builder, ClockPort clock, AiProperties properties) {
         this.client = builder.build();
@@ -77,7 +83,7 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
 
     @Override
     public GeneratedBuildDraft generate(BuildRequest request, CatalogSlice slice, List<BuildViolation> feedback) {
-        Instant until = blockedUntil;
+        Instant until = blockedUntil.getOrDefault(PRIMARY, Instant.MIN);
         if (clock.now().isBefore(until)) {
             log.atInfo().setMessage("ai.provider.short_circuit").addKeyValue("retryAt", until).log();
             throw new ProviderUnavailable(Optional.of(until));
@@ -105,10 +111,11 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
      */
     private ChatResponse callWithFallback(Prompt prompt) {
         try {
-            return call(prompt);
+            return call(prompt, PRIMARY);
         } catch (Overloaded primary) {
             String fallback = properties.fallbackModel();
-            if (fallback == null || fallback.isBlank()) {
+            if (fallback == null || fallback.isBlank() || isBlocked(fallback)) {
+                // Sem reserva, ou reserva ainda dentro do 429 dele: termina sem gastar outra chamada.
                 throw primary.unavailable;
             }
             log.atWarn()
@@ -118,9 +125,11 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
                     .addKeyValue("reason", primary.reason)
                     .log();
             try {
-                return call(new Prompt(prompt.getInstructions(), ChatOptions.builder().model(fallback).build()));
-            } catch (Overloaded again) {
-                throw again.unavailable;
+                return call(new Prompt(prompt.getInstructions(), ChatOptions.builder().model(fallback).build()), fallback);
+            } catch (Overloaded | ProviderUnavailable fallbackDown) {
+                // O erro é o do principal (sobrecarga, sem horário): o retryAt de um 429 do reserva não
+                // vale para o principal e já ficou no disjuntor do reserva.
+                throw primary.unavailable;
             }
         }
     }
@@ -137,7 +146,12 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
         }
     }
 
-    private ChatResponse call(Prompt prompt) {
+    private boolean isBlocked(String model) {
+        return clock.now().isBefore(blockedUntil.getOrDefault(model, Instant.MIN));
+    }
+
+    /** @param breakerKey disjuntor que um 429 desta chamada alimenta: o do principal ou o do reserva */
+    private ChatResponse call(Prompt prompt, String breakerKey) {
         // Virtual thread: a espera pela rede não ocupa o pool comum. O timeout corta a espera do
         // usuário e INTERROMPE a chamada, para ela não seguir gastando cota (G5); o cliente do
         // Gemini não tem timeout configurável.
@@ -154,7 +168,7 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
             Thread.currentThread().interrupt();
             throw new ProviderUnavailable(Optional.empty());
         } catch (ExecutionException e) {
-            throw translate(e.getCause());
+            throw translate(e.getCause(), breakerKey);
         }
     }
 
@@ -162,7 +176,7 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
      * Provedor indisponível (cota, fora do ar, rede, chave errada) vira {@link ProviderUnavailable}:
      * regenerar não resolve. Só o resto vira {@link GenerationFailed}.
      */
-    private RuntimeException translate(Throwable failure) {
+    private RuntimeException translate(Throwable failure, String breakerKey) {
         for (Throwable t = failure; t != null; t = t.getCause()) {
             if (t instanceof ApiException api) {
                 if (isMisconfigured(api)) {
@@ -177,7 +191,7 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
                             .addKeyValue("status", api.code())
                             .addKeyValue("retryAt", retryAt.orElse(null))
                             .log();
-                    retryAt.ifPresent(at -> blockedUntil = at);
+                    retryAt.ifPresent(at -> blockedUntil.put(breakerKey, at));
                     return api.code() >= 500 ? new Overloaded(String.valueOf(api.code())) : new ProviderUnavailable(retryAt);
                 }
             }
