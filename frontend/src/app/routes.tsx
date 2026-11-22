@@ -3,6 +3,7 @@ import { AdminCatalogPage } from "../features/admin-catalog/AdminCatalogPage";
 import { BuildResultPage } from "../features/build-result/BuildResultPage";
 import { CreateBuildPage } from "../features/create-build/CreateBuildPage";
 import { GeneratingPage } from "../features/generating/GeneratingPage";
+import { GuidePage } from "../features/guide/GuidePage";
 import { HomePage } from "../features/home/HomePage";
 import { Layout } from "./Layout";
 import { MyBuildsPage } from "../features/my-builds/MyBuildsPage";
@@ -14,6 +15,7 @@ export const routes: RouteObject[] = [
     element: <Layout />,
     children: [
       { index: true, element: <HomePage /> },
+      { path: "guia", element: <GuidePage /> },
       { path: "criar", element: <CreateBuildPage /> },
       { path: "gerando", element: <GeneratingPage /> },
       { path: "builds/:id", element: <BuildResultPage /> },

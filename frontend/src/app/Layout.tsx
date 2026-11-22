@@ -31,6 +31,7 @@ function Page() {
           <NavLink to="/" end>
             Início
           </NavLink>
+          <NavLink to="/guia">Guia rápido</NavLink>
           <NavLink to="/minhas-builds">Minhas builds</NavLink>
           {me?.role === "ADMIN" && <NavLink to="/admin">Admin</NavLink>}
           <a href="/#como-funciona">Como funciona</a>

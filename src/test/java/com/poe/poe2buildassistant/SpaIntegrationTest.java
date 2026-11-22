@@ -43,7 +43,7 @@ class SpaIntegrationTest {
     }
 
     @ParameterizedTest(name = "rota do SPA {0} faz fallback para index.html")
-    @ValueSource(strings = {"/criar", "/gerando", "/builds/00000000-0000-0000-0000-000000000042", "/minhas-builds", "/admin"})
+    @ValueSource(strings = {"/guia", "/criar", "/gerando", "/builds/00000000-0000-0000-0000-000000000042", "/minhas-builds", "/admin"})
     void rotasDoSpa(String path) throws Exception {
         HttpResponse<String> r = get(path);
 

@@ -89,6 +89,16 @@
   max-width: var(--medida);
 }
 
+.guia {
+  color: var(--cinza-brasa);
+  font-size: var(--texto-pequeno);
+}
+
+.guia a {
+  color: var(--osso);
+  text-underline-offset: 0.25em;
+}
+
 /* ---- Tooltip de item ---- */
 
 .tooltip {

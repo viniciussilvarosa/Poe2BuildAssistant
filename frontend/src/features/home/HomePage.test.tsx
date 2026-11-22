@@ -47,9 +47,18 @@ describe("HomePage", () => {
 
     const nav = screen.getByRole("navigation", { name: "Principal" });
     expect(nav).toHaveTextContent("Início");
+    expect(nav).toHaveTextContent("Guia rápido");
     expect(nav).toHaveTextContent("Minhas builds");
     // "Entrar com Google" aparece quando a sessão termina de carregar (visitante).
     await waitFor(() => expect(nav).toHaveTextContent("Entrar"));
+  });
+
+  it("convida quem é novo no jogo a ler o guia", async () => {
+    const router = renderAt("/");
+
+    await userEvent.click(screen.getByRole("link", { name: "Leia o guia rápido" }));
+
+    expect(router.state.location.pathname).toBe("/guia");
   });
 
   it("rota desconhecida mostra página de não encontrado com caminho de volta", () => {

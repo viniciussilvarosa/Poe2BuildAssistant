@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class SpaForwardController {
 
     /** Caminhos do SPA; também liberados no SecurityConfig. */
-    public static final String[] ROUTES = {"/criar", "/gerando", "/builds/*", "/minhas-builds", "/admin", "/admin/**"};
+    public static final String[] ROUTES = {"/guia", "/criar", "/gerando", "/builds/*", "/minhas-builds", "/admin", "/admin/**"};
 
     /** Arquivos estáticos gerados pelo build do Vite. */
     public static final String[] STATIC = {"/", "/index.html", "/assets/**", "/favicon.svg"};
 
-    @GetMapping({"/criar", "/gerando", "/builds/{id}", "/minhas-builds", "/admin", "/admin/**"})
+    @GetMapping({"/guia", "/criar", "/gerando", "/builds/{id}", "/minhas-builds", "/admin", "/admin/**"})
     String forward() {
         return "forward:/index.html";
     }
