@@ -33,12 +33,12 @@ class ApplicationContextTest {
     @Autowired private GenerationStreamTimeout streamTimeout;
 
     @Test
-    @DisplayName("timeout da IA de 45 s, e o stream SSE fica aberto além do pior caso da geração (#46, R-01)")
+    @DisplayName("180 s por modelo, prazo de 5 min para a geração inteira, e o stream SSE fica aberto além do pior caso da geração (#46, R-01)")
     void timeoutsAlinhados() {
-        assertThat(ai.timeout()).isEqualTo(Duration.ofSeconds(45));
+        assertThat(ai.timeout()).isEqualTo(Duration.ofSeconds(180));
         // Limite de 5 min da geração (#88), cobrindo cada tentativa no principal e no reserva.
         assertThat(streamTimeout.value()).isEqualTo(Duration.ofMinutes(5));
-        assertThat(streamTimeout.value()).isGreaterThan(ai.timeout().multipliedBy(generation.maxAttempts() * 3L));
+        assertThat(generation.timeBudget()).as("prazo das tentativas: 5 min - 30 s").isEqualTo(Duration.ofSeconds(270));
         assertThat(ai.activeFallbacks()).containsExactly("gemini-3.6-flash", "gemini-3.5-flash");
     }
 

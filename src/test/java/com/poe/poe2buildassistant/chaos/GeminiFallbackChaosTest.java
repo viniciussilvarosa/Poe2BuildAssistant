@@ -178,18 +178,15 @@ class GeminiFallbackChaosTest {
     class LimitesDoTempo {
 
         @Test
-        @DisplayName("limite exatamente igual ao pior caso é aceito")
-        void igualAoPiorCaso() {
-            // 60 s x 2 x 2 + 30 s = 270 s
-            assertThat(GenerationStreamTimeout.of(Duration.ofSeconds(270), Duration.ofSeconds(60), 2, 2).value())
-                    .isEqualTo(Duration.ofSeconds(270));
+        @DisplayName("limite exatamente no mínimo (2x a folga) é aceito, com prazo igual à folga")
+        void noMinimo() {
+            assertThat(GenerationStreamTimeout.of(Duration.ofSeconds(60)).attemptsBudget()).isEqualTo(Duration.ofSeconds(30));
         }
 
         @Test
-        @DisplayName("um segundo abaixo do pior caso é recusado")
+        @DisplayName("um segundo abaixo do mínimo é recusado")
         void umSegundoAbaixo() {
-            assertThatThrownBy(() -> GenerationStreamTimeout.of(Duration.ofSeconds(269), Duration.ofSeconds(60), 2, 2))
-                    .isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> GenerationStreamTimeout.of(Duration.ofSeconds(59))).isInstanceOf(IllegalStateException.class);
         }
 
         @ParameterizedTest(name = "reserva {0} conta como sem reserva")

@@ -8,13 +8,13 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 /**
  * Configuração do adaptador de IA.
  *
- * @param timeout tempo máximo de uma chamada ao LLM
+ * @param timeout tempo que cada modelo tem para responder (limitado também pelo prazo da geração)
  * @param fallbackModels modelos reserva, em ordem: quando o principal (ou o reserva anterior) está
  *     sobrecarregado, sem cota ou estoura o timeout, a mesma tentativa passa para o próximo (#88).
  *     Vazio desliga o reserva.
  */
 @ConfigurationProperties("app.ai")
-public record AiProperties(@DefaultValue("45s") Duration timeout, @DefaultValue({}) List<String> fallbackModels) {
+public record AiProperties(@DefaultValue("180s") Duration timeout, @DefaultValue({}) List<String> fallbackModels) {
 
     public AiProperties {
         fallbackModels = fallbackModels == null ? List.of() : List.copyOf(fallbackModels);
