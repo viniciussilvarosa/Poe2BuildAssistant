@@ -64,14 +64,23 @@ public class SecurityConfig {
                                         .authenticated()
                                         .requestMatchers("/api/**")
                                         .permitAll()
+                                        // GET e HEAD: monitores de disponibilidade e verificadores de
+                                        // links usam HEAD e recebiam 403 (#65). A API protegida já foi
+                                        // decidida pelas regras acima.
                                         .requestMatchers(HttpMethod.GET, SpaForwardController.STATIC)
+                                        .permitAll()
+                                        .requestMatchers(HttpMethod.HEAD, SpaForwardController.STATIC)
                                         .permitAll()
                                         .requestMatchers(HttpMethod.GET, SpaForwardController.ROUTES)
                                         .permitAll()
+                                        .requestMatchers(HttpMethod.HEAD, SpaForwardController.ROUTES)
+                                        .permitAll()
                                         // Navegação para um endereço desconhecido: o ApiExceptionHandler
-                                        // devolve o SPA com 404 (bug #48). Só GET; arquivos internos não
-                                        // estão em classpath:/static e nunca são servidos.
+                                        // devolve o SPA com 404 (bug #48). Só leitura; arquivos internos
+                                        // não estão em classpath:/static e nunca são servidos.
                                         .requestMatchers(HttpMethod.GET, "/**")
+                                        .permitAll()
+                                        .requestMatchers(HttpMethod.HEAD, "/**")
                                         .permitAll()
                                         .anyRequest()
                                         .denyAll())
