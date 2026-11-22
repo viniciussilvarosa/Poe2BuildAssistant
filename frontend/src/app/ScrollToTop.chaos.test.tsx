@@ -50,6 +50,22 @@ describe("caos da rolagem ao trocar de página (#92)", () => {
 
       expect(scrollTo).not.toHaveBeenCalledWith(0, 1800);
     });
+
+    it("recarregar (F5) a mesma página ainda volta à posição em que estava", async () => {
+      const guia = carregarDoZero("/guia");
+      rolarPara(1800);
+      act(() => {
+        window.dispatchEvent(new Event("pagehide"));
+      });
+      guia.unmount();
+      rolarPara(0);
+      scrollTo.mockClear();
+
+      carregarDoZero("/guia");
+      await screen.findByRole("heading", { level: 1 });
+
+      expect(scrollTo).toHaveBeenCalledWith(0, 1800);
+    });
   });
 
   describe("R5: armazenamento da sessão indisponível", () => {

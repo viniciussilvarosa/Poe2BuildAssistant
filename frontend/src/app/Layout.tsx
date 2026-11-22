@@ -1,8 +1,15 @@
-import { Link, NavLink, Outlet, ScrollRestoration } from "react-router";
+import { Link, NavLink, Outlet, ScrollRestoration, type Location } from "react-router";
 import { AuthMenu } from "../components/AuthMenu";
 import styles from "./Layout.module.css";
 import { LoginFailedNotice } from "./LoginFailedNotice";
 import { SessionProvider, useSession } from "./session";
+
+/**
+ * Toda página carregada do zero (endereço digitado, link externo, volta do login) tem a chave
+ * "default": sem separar pelo caminho, uma herdava a rolagem salva pela outra (chaos do PR #93).
+ * Pelo caminho, recarregar a mesma página ainda volta à mesma posição.
+ */
+const scrollKey = (location: Location) => (location.key === "default" ? `default:${location.pathname}` : location.key);
 
 export function Layout() {
   return (
@@ -48,7 +55,7 @@ function Page() {
       </footer>
       {/* Página nova abre no topo e "voltar" devolve a posição anterior (#92). Sem isto, a tela de
           progresso abria rolada até o rodapé, porque o botão de gerar fica no fim do formulário. */}
-      <ScrollRestoration />
+      <ScrollRestoration getKey={scrollKey} />
     </div>
   );
 }
