@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet, ScrollRestoration } from "react-router";
 import { AuthMenu } from "../components/AuthMenu";
 import styles from "./Layout.module.css";
 import { LoginFailedNotice } from "./LoginFailedNotice";
@@ -46,6 +46,9 @@ function Page() {
         <p>Projeto independente não afiliado à Grinding Gear Games.</p>
         <p>Arte: Path of Exile 2 © Grinding Gear Games.</p>
       </footer>
+      {/* Página nova abre no topo e "voltar" devolve a posição anterior (#92). Sem isto, a tela de
+          progresso abria rolada até o rodapé, porque o botão de gerar fica no fim do formulário. */}
+      <ScrollRestoration />
     </div>
   );
 }
