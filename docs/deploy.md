@@ -27,7 +27,9 @@ Para exigir o CI verde antes do merge: *Settings → Branches → Branch protect
 
 Variável `APP_PUBLIC_URL` = o endereço oficial acima: o Cloud Run também publica o serviço em `https://poe2buildassistant-qo5it56ita-uc.a.run.app`, e o app redireciona esse endereço para o oficial, onde o login com Google funciona.
 
-Configuração do serviço: 1 GiB e 1 vCPU, timeout de 300 s (cobre o stream de 150 s da geração), de 0 a **1** instância: a sessão de login fica na memória do processo (sem sessão compartilhada), então uma segunda instância faria o usuário perder o login ou a volta do Google cair em outra instância. Para escalar além de 1, primeiro mover a sessão para o banco (Spring Session JDBC). Com 0 instâncias, a primeira requisição depois de um tempo parado espera a subida do Java (~15 s).
+Modelo de IA: `gemini-3.6-flash`, com `gemini-3.5-flash` como reserva (`app.ai.fallback-model`) quando o principal responde 503 ou estoura o timeout. O evento `ai.provider.fallback` no log mostra quando o reserva entrou.
+
+Configuração do serviço: 1 GiB e 1 vCPU, timeout de **330 s** (`--timeout=330`; a geração pode levar até 5 min, `app.generation.max-duration`, e o Cloud Run precisa esperar mais que isso), de 0 a **1** instância: a sessão de login fica na memória do processo (sem sessão compartilhada), então uma segunda instância faria o usuário perder o login ou a volta do Google cair em outra instância. Para escalar além de 1, primeiro mover a sessão para o banco (Spring Session JDBC). Com 0 instâncias, a primeira requisição depois de um tempo parado espera a subida do Java (~15 s).
 
 **Banco (Neon):** o app usa a conexão com pooling (`DB_URL`, host `…-pooler…`); o Flyway usa a conexão direta (`SPRING_FLYWAY_URL`, o mesmo host sem `-pooler`), como recomenda o Neon para migrations. Os dois usam o usuário de `DB_USERNAME`/`SPRING_FLYWAY_USER` e a senha do segredo `DB_PASSWORD`. O Neon hiberna o banco depois de alguns minutos sem uso; a primeira consulta seguinte leva cerca de 1 s a mais.
 
@@ -75,7 +77,7 @@ docker run -d --name poe2 -p 8080:8080 \
 - [ ] Variáveis de ambiente do host conferidas contra a lista acima. `QUOTA_IP_SALT` é o mesmo do deploy anterior (trocar zera a cota dos visitantes do dia).
 - [ ] URI de redirecionamento do Google OAuth cadastrada para o domínio de produção (`https://<domínio>/login/oauth2/code/google`).
 - [ ] Cota do Gemini disponível para o volume esperado (camada gratuita × faturamento ativo).
-- [ ] Proxy reverso com timeout de leitura ≥ 150 s em `/api/builds/generate` (stream SSE da geração).
+- [ ] Proxy reverso com timeout de leitura ≥ 330 s em `/api/builds/generate` (stream SSE da geração).
 - [ ] Tag da imagem anterior anotada, para o rollback.
 
 **Durante**
