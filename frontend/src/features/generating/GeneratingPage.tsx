@@ -97,7 +97,7 @@ export function GeneratingPage() {
         </ol>
       </div>
 
-      <p className={styles.nota}>Costuma levar menos de um minuto, às vezes até dois. Mantenha esta página aberta.</p>
+      <p className={styles.nota}>Costuma levar menos de um minuto; quando a IA está sobrecarregada, pode levar alguns minutos. Mantenha esta página aberta.</p>
     </section>
   );
 }

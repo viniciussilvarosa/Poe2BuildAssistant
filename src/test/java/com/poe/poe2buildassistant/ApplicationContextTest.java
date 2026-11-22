@@ -36,7 +36,10 @@ class ApplicationContextTest {
     @DisplayName("timeout da IA de 60 s, e o stream SSE fica aberto além do pior caso da geração (#46, R-01)")
     void timeoutsAlinhados() {
         assertThat(ai.timeout()).isEqualTo(Duration.ofSeconds(60));
-        assertThat(streamTimeout.value()).isGreaterThan(ai.timeout().multipliedBy(generation.maxAttempts()));
+        // Limite de 5 min da geração (#88), cobrindo cada tentativa no principal e no reserva.
+        assertThat(streamTimeout.value()).isEqualTo(Duration.ofMinutes(5));
+        assertThat(streamTimeout.value()).isGreaterThan(ai.timeout().multipliedBy(generation.maxAttempts() * 2L));
+        assertThat(ai.fallbackModel()).isEqualTo("gemini-3.5-flash");
     }
 
     @Test

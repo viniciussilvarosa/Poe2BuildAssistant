@@ -34,6 +34,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -83,7 +84,7 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
         }
         Prompt prompt = new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userPrompt(request, slice, feedback))));
         long start = System.nanoTime();
-        ChatResponse response = call(prompt);
+        ChatResponse response = callWithFallback(prompt);
         var metadata = response.getMetadata();
         var usage = metadata == null ? null : metadata.getUsage();
         log.atInfo()
@@ -97,6 +98,45 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
         return toDraft(text(response));
     }
 
+    /**
+     * Chama o modelo principal e, se ele estiver sobrecarregado (5xx) ou estourar o timeout, repete
+     * a mesma chamada no modelo reserva ({@code app.ai.fallback-model}), dentro da mesma tentativa
+     * (#88). Cota (429), configuração e resposta malformada não trocam de modelo.
+     */
+    private ChatResponse callWithFallback(Prompt prompt) {
+        try {
+            return call(prompt);
+        } catch (Overloaded primary) {
+            String fallback = properties.fallbackModel();
+            if (fallback == null || fallback.isBlank()) {
+                throw primary.unavailable;
+            }
+            log.atWarn()
+                    .setMessage("ai.provider.fallback")
+                    .addKeyValue("from", "primary")
+                    .addKeyValue("to", fallback)
+                    .addKeyValue("reason", primary.reason)
+                    .log();
+            try {
+                return call(new Prompt(prompt.getInstructions(), ChatOptions.builder().model(fallback).build()));
+            } catch (Overloaded again) {
+                throw again.unavailable;
+            }
+        }
+    }
+
+    /** Provedor sobrecarregado ou lento: o único caso em que vale tentar o modelo reserva. */
+    private static final class Overloaded extends RuntimeException {
+        final ProviderUnavailable unavailable;
+        final String reason;
+
+        Overloaded(String reason) {
+            super(reason, null, false, false);
+            this.unavailable = new ProviderUnavailable(Optional.empty());
+            this.reason = reason;
+        }
+    }
+
     private ChatResponse call(Prompt prompt) {
         // Virtual thread: a espera pela rede não ocupa o pool comum. O timeout corta a espera do
         // usuário e INTERROMPE a chamada, para ela não seguir gastando cota (G5); o cliente do
@@ -108,7 +148,7 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
         } catch (TimeoutException e) {
             task.cancel(true);
             log.atWarn().setMessage("ai.provider.unavailable").addKeyValue("status", "timeout").log();
-            throw new ProviderUnavailable(Optional.empty());
+            throw new Overloaded("timeout");
         } catch (InterruptedException e) {
             task.cancel(true);
             Thread.currentThread().interrupt();
@@ -138,7 +178,7 @@ class GeminiBuildGeneratorAdapter implements BuildGeneratorPort {
                             .addKeyValue("retryAt", retryAt.orElse(null))
                             .log();
                     retryAt.ifPresent(at -> blockedUntil = at);
-                    return new ProviderUnavailable(retryAt);
+                    return api.code() >= 500 ? new Overloaded(String.valueOf(api.code())) : new ProviderUnavailable(retryAt);
                 }
             }
             if (t instanceof IOException) {

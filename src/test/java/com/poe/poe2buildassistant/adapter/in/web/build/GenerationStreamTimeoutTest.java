@@ -1,6 +1,7 @@
 package com.poe.poe2buildassistant.adapter.in.web.build;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
@@ -9,18 +10,27 @@ import org.junit.jupiter.api.Test;
 class GenerationStreamTimeoutTest {
 
     @Test
-    @DisplayName("cobre todas as tentativas esgotando o timeout do LLM, mais a folga")
-    void cobreOPiorCaso() {
-        var timeout = GenerationStreamTimeout.covering(Duration.ofSeconds(60), 2);
+    @DisplayName("a geração tem o limite configurado (5 min), que cobre o pior caso com o modelo reserva (#88)")
+    void limiteConfigurado() {
+        var timeout = GenerationStreamTimeout.of(Duration.ofMinutes(5), Duration.ofSeconds(60), 2, 2);
 
-        assertThat(timeout.value()).isEqualTo(Duration.ofSeconds(150));
+        assertThat(timeout.value()).isEqualTo(Duration.ofMinutes(5));
     }
 
     @Test
-    @DisplayName("acompanha o timeout do LLM: subir um sobe o outro (R-01)")
-    void acompanhaOTimeoutDoLlm() {
-        var timeout = GenerationStreamTimeout.covering(Duration.ofSeconds(120), 3);
+    @DisplayName("limite menor que o pior caso (timeout x tentativas x modelos + folga) recusa subir (R-01)")
+    void limiteCurtoRecusado() {
+        // 120 s x 2 tentativas x 2 modelos + 30 s = 510 s > 300 s: o stream fecharia antes da geração.
+        assertThatThrownBy(() -> GenerationStreamTimeout.of(Duration.ofMinutes(5), Duration.ofSeconds(120), 2, 2))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("app.generation.max-duration");
+    }
 
-        assertThat(timeout.value()).isGreaterThan(Duration.ofSeconds(120).multipliedBy(3));
+    @Test
+    @DisplayName("sem modelo reserva, o pior caso conta uma chamada por tentativa")
+    void semReserva() {
+        var timeout = GenerationStreamTimeout.of(Duration.ofSeconds(150), Duration.ofSeconds(60), 2, 1);
+
+        assertThat(timeout.value()).isEqualTo(Duration.ofSeconds(150));
     }
 }
